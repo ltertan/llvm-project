@@ -517,6 +517,35 @@ static void addCoveragePrefixMapArg(const Driver &D, const ArgList &Args,
   }
 }
 
+/// Add a CC1 and CC1AS option to specify the source date epoch for creating
+/// reproducible builds.
+static void addFixedDateTimeArg(const Driver &D, const ArgList &Args,
+                                ArgStringList &CmdArgs) {
+  StringRef SourceDateEpochEnv = "", SourceDateEpochArg = "";
+
+  if (const char * EnvStr = getenv("SOURCE_DATE_EPOCH"))
+    SourceDateEpochEnv = EnvStr;
+
+  if (Arg *A = Args.getLastArg(options::OPT_ffixed_date_time_EQ)) {
+    SourceDateEpochArg = A->getValue();
+    A->claim();
+  }
+
+  if (!SourceDateEpochArg.empty()) {
+    if (!SourceDateEpochEnv.empty() &&
+        !SourceDateEpochEnv.equals(SourceDateEpochArg)) {
+      D.Diag(clang::diag::warn_drv_overriding_source_date_epoch_value)
+        << Args.MakeArgString("SOURCE_DATE_EPOCH=" + SourceDateEpochEnv)
+        << Args.MakeArgString("-ffixed-date-time=" + SourceDateEpochArg);
+    }
+    CmdArgs.push_back(Args.MakeArgString("-ffixed-date-time=" +
+                                         SourceDateEpochArg));
+  } else if (!SourceDateEpochEnv.empty()) {
+    CmdArgs.push_back(Args.MakeArgString("-ffixed-date-time=" +
+                                         SourceDateEpochEnv));
+  }
+}
+
 /// Vectorize at all optimization levels greater than 1 except for -Oz.
 /// For -Oz the loop vectorizer is disabled, while the slp vectorizer is
 /// enabled.
@@ -1325,6 +1354,7 @@ void Clang::AddPreprocessingOptions(Compilation &C, const JobAction &JA,
   }
 
   addMacroPrefixMapArg(D, Args, CmdArgs);
+  addFixedDateTimeArg(D, Args, CmdArgs);
   addCoveragePrefixMapArg(D, Args, CmdArgs);
 
   Args.AddLastArg(CmdArgs, options::OPT_ffile_reproducible,

@@ -4464,6 +4464,22 @@ static bool ParsePreprocessorArgs(PreprocessorOptions &Opts, ArgList &Args,
   for (const auto *A : Args.filtered(OPT_error_on_deserialized_pch_decl))
     Opts.DeserializedPCHDeclsToErrorOn.insert(A->getValue());
 
+  Opts.SourceDateEpoch = (time_t) -1;
+  if (const Arg *A = Args.getLastArg(OPT_ffixed_date_time_EQ)) {
+    const int64_t MAX_SOURCE_DATE_EPOCH = 253402300799; // 23:59:59 Dec 31 9999
+    StringRef SourceDateEpoch = A->getValue();
+    int64_t Epoch;
+    if (SourceDateEpoch.getAsInteger(10, Epoch) ||
+        Epoch < 0 ||
+        Epoch > MAX_SOURCE_DATE_EPOCH) {
+      Diags.Report(diag::err_drv_invalid_source_date_epoch_value)
+        << SourceDateEpoch
+        << std::to_string(MAX_SOURCE_DATE_EPOCH);
+    } else {
+      Opts.SourceDateEpoch = (time_t) Epoch;
+    }
+  }
+
   if (const Arg *A = Args.getLastArg(OPT_preamble_bytes_EQ)) {
     StringRef Value(A->getValue());
     size_t Comma = Value.find(',');

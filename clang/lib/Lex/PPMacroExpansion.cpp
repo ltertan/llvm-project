@@ -1091,19 +1091,28 @@ void Preprocessor::removeCachedMacroExpandedTokensOfLastLexer() {
   MacroExpandingLexersStack.pop_back();
 }
 
-/// ComputeDATE_TIME - Compute the current time, enter it into the specified
-/// scratch buffer, then return DATELoc/TIMELoc locations with the position of
-/// the identifier tokens inserted.
-static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
-                             Preprocessor &PP) {
+/// Compute the current time, enter it into DATELoc and TIMELoc.
+void Preprocessor::ComputeDATE_TIME(Token &Tok) {
+  // Do not issue warn_pp_date_time if with option -ffixed-date-time or
+  // environment variable SOURCE_DATE_EPOCH is set.
+
+  PreprocessorOptions &PO = getPreprocessorOpts();
+  if (DATELoc.isValid()) {
+    assert(TIMELoc.isValid());
+    if (PO.SourceDateEpoch == (time_t) -1)
+      Diag(Tok.getLocation(), diag::warn_pp_date_time);
+    return;
+  }
+
   time_t TT;
-  std::tm *TM;
-  if (PP.getPreprocessorOpts().SourceDateEpoch) {
-    TT = *PP.getPreprocessorOpts().SourceDateEpoch;
+  struct tm *TM;
+  if (PO.SourceDateEpoch != (time_t) -1) {
+    TT = *PO.SourceDateEpoch;
     TM = std::gmtime(&TT);
   } else {
-    TT = std::time(nullptr);
-    TM = std::localtime(&TT);
+    Diag(Tok.getLocation(), diag::warn_pp_date_time);
+    time_t TT = time(nullptr);
+    TM = localtime(&TT);
   }
 
   static const char * const Months[] = {
@@ -1120,7 +1129,7 @@ static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
       TmpStream << "??? ?? ????";
     Token TmpTok;
     TmpTok.startToken();
-    PP.CreateString(TmpStream.str(), TmpTok);
+    CreateString(TmpStream.str(), TmpTok);
     DATELoc = TmpTok.getLocation();
   }
 
@@ -1134,7 +1143,7 @@ static void ComputeDATE_TIME(SourceLocation &DATELoc, SourceLocation &TIMELoc,
       TmpStream << "??:??:??";
     Token TmpTok;
     TmpTok.startToken();
-    PP.CreateString(TmpStream.str(), TmpTok);
+    CreateString(TmpStream.str(), TmpTok);
     TIMELoc = TmpTok.getLocation();
   }
 }
@@ -1583,9 +1592,7 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     }
     Tok.setKind(tok::string_literal);
   } else if (II == Ident__DATE__) {
-    Diag(Tok.getLocation(), diag::warn_pp_date_time);
-    if (!DATELoc.isValid())
-      ComputeDATE_TIME(DATELoc, TIMELoc, *this);
+    ComputeDATE_TIME(Tok);
     Tok.setKind(tok::string_literal);
     Tok.setLength(strlen("\"Mmm dd yyyy\""));
     Tok.setLocation(SourceMgr.createExpansionLoc(DATELoc, Tok.getLocation(),
@@ -1593,9 +1600,7 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
                                                  Tok.getLength()));
     return;
   } else if (II == Ident__TIME__) {
-    Diag(Tok.getLocation(), diag::warn_pp_date_time);
-    if (!TIMELoc.isValid())
-      ComputeDATE_TIME(DATELoc, TIMELoc, *this);
+    ComputeDATE_TIME(Tok);
     Tok.setKind(tok::string_literal);
     Tok.setLength(strlen("\"hh:mm:ss\""));
     Tok.setLocation(SourceMgr.createExpansionLoc(TIMELoc, Tok.getLocation(),
@@ -1618,6 +1623,32 @@ void Preprocessor::ExpandBuiltinMacro(Token &Tok) {
     OS << Depth;
     Tok.setKind(tok::numeric_constant);
   } else if (II == Ident__TIMESTAMP__) {
+#if 0
+    struct tm *TM = nullptr;
+    PreprocessorOptions &PO = getPreprocessorOpts();
+    if (PO.SourceDateEpoch != (time_t) -1) {
+      TM = gmtime(&PO.SourceDateEpoch);
+    } else {
+      // Do not issue warn_pp_date_time if with option -ffixed-date-time or
+      // environment variable SOURCE_DATE_EPOCH is set.
+      Diag(Tok.getLocation(), diag::warn_pp_date_time);
+
+      // MSVC, ICC, GCC, VisualAge C++ extension. The generated string should be
+      // of the form "Ddd Mmm dd hh::mm::ss yyyy", which is returned by asctime.
+
+      // Get the file that we are lexing out of.  If we're currently lexing from
+      // a macro, dig into the include stack.
+      PreprocessorLexer *TheLexer = getCurrentFileLexer();
+      if (TheLexer) {
+        const FileEntry * CurFile =
+                            SourceMgr.getFileEntryForID(TheLexer->getFileID());
+        if (CurFile) {
+          time_t TT = CurFile->getModificationTime();
+          TM = localtime(&TT);
+        }
+      }
+    }
+#endif
     Diag(Tok.getLocation(), diag::warn_pp_date_time);
     // MSVC, ICC, GCC, VisualAge C++ extension.  The generated string should be
     // of the form "Ddd Mmm dd hh::mm::ss yyyy", which is returned by asctime.

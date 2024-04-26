@@ -4205,6 +4205,10 @@ def fmacro_prefix_map_EQ
   Visibility<[ClangOption, CC1Option]>,
     HelpText<"remap file source paths in predefined preprocessor macros and "
              "__builtin_FILE(). Implies -ffile-reproducible.">;
+def ffixed_date_time_EQ
+  : Joined<["-"], "ffixed-date-time=">, Group<f_Group>,
+    Flags<[CC1Option, CoreOption]>,
+    HelpText<"Set __DATE__, __TIME__, __TIMESTAMP__ to a fixed value, a UNIX timestamp, defined as the number of seconds, excluding leap seconds, since 01 Jan 1970 00:00:00 UTC">;
 defm force_dwarf_frame : BoolFOption<"force-dwarf-frame",
   CodeGenOpts<"ForceDwarfFrameSection">, DefaultFalse,
   PosFlag<SetTrue, [], [ClangOption, CC1Option],

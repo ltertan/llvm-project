@@ -486,6 +486,11 @@ def warn_drv_large_data_threshold_invalid_code_model: Warning<
   "'%0' only applies to medium and large code models">,
   InGroup<UnusedCommandLineArgument>;
 
+def warn_drv_overriding_source_date_epoch_value : Warning<
+  "overriding source date epoch value set by environment variable '%0' with option '%1'">;
+def err_drv_invalid_source_date_epoch_value : Error <
+  "invalid value '%0' for '-ffixed-date-time' or environment variable 'MAX_SOURCE_DATE_EPOCH', must expand to a non-negative integer less than or equal to %1">;
+
 def note_drv_command_failed_diag_msg : Note<
   "diagnostic msg: %0">;
 def note_drv_t_option_is_global : Note<

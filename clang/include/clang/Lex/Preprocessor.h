@@ -2316,6 +2316,9 @@ public:
   /// the tok::eod token is found. Returns the range of the skipped tokens.
   SourceRange DiscardUntilEndOfDirective();
 
+  /// Compute the current time, enter it into DATELoc and TIMELoc.
+  void ComputeDATE_TIME(Token &Tok);
+
   /// Returns true if the preprocessor has seen a use of
   /// __DATE__ or __TIME__ in the file so far.
   bool SawDateOrTime() const {
