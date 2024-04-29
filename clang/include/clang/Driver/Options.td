@@ -3849,6 +3849,10 @@ def mnocrc : Flag<["-"], "mnocrc">, Group<m_arm_Features_Group>,
   HelpText<"Disallow use of CRC instructions (ARM only)">;
 def mno_neg_immediates: Flag<["-"], "mno-neg-immediates">, Group<m_arm_Features_Group>,
   HelpText<"Disallow converting instructions with negative immediates to their negation or inversion.">;
+def mldstex: Flag<["-"], "mldstex">, Group<m_arm_Features_Group>,
+  HelpText<"Allow generation of ldrex/strex atomic instructions.">;
+def mno_ldstex: Flag<["-"], "mno-ldstex">, Group<m_arm_Features_Group>,
+  HelpText<"Disallow generation of ldrex/strex atomic instructions.">;
 } // let Flags = [TargetSpecific]
 def mcmse : Flag<["-"], "mcmse">, Group<m_arm_Features_Group>,
   Flags<[NoXarchOption,CC1Option]>,

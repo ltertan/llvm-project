@@ -159,6 +159,9 @@ def FeatureAcquireRelease : SubtargetFeature<"acquire-release",
                                              "Has v8 acquire/release (lda/ldaex "
                                              " etc) instructions">;
 
+def FeatureNoLdStExclusive : SubtargetFeature<"no-ldstex",
+                                             "HasNoLdStExclusive", "true",
+                                             "Has no ldrex/strex instructions">;
 
 // True if floating point compare + branch is slow.
 def FeatureSlowFPBrcc     : SubtargetFeature<"slow-fp-brcc", "IsFPBrccSlow", "true",

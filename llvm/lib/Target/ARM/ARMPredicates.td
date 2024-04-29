@@ -137,6 +137,9 @@ def HasV7Clrex  : Predicate<"Subtarget->hasV7Clrex()">,
 def HasAcquireRelease : Predicate<"Subtarget->hasAcquireRelease()">,
                                   AssemblerPredicate<(all_of FeatureAcquireRelease),
                                                      "acquire/release">;
+def HasLdStExclusive : Predicate<"!Subtarget->hasNoLdStExclusive()">,
+                                  AssemblerPredicate<(all_of (not FeatureNoLdStExclusive)),
+                                                     "ldrex/strex">;
 def HasMP            : Predicate<"Subtarget->hasMPExtension()">,
                                  AssemblerPredicate<(all_of FeatureMP),
                                                     "mp-extensions">;

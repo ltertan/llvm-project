@@ -3701,7 +3701,7 @@ def t2LDREX  : Thumb2I<(outs rGPR:$Rt), (ins t2addrmode_imm0_1020s4:$addr),
                        AddrModeT2_ldrex, 4, NoItinerary,
                        "ldrex", "\t$Rt, $addr", "",
                      [(set rGPR:$Rt, (ldrex_4 t2addrmode_imm0_1020s4:$addr))]>,
-               Requires<[IsThumb, HasV8MBaseline]>, Sched<[WriteLd]> {
+               Requires<[IsThumb, HasV8MBaseline, HasLdStExclusive]>, Sched<[WriteLd]> {
   bits<4> Rt;
   bits<12> addr;
   let Inst{31-27} = 0b11101;
@@ -3781,7 +3781,7 @@ def t2STREX  : Thumb2I<(outs rGPR:$Rd), (ins rGPR:$Rt,
                   "strex", "\t$Rd, $Rt, $addr", "",
                   [(set rGPR:$Rd,
                         (strex_4 rGPR:$Rt, t2addrmode_imm0_1020s4:$addr))]>,
-               Requires<[IsThumb, HasV8MBaseline]>, Sched<[WriteST]> {
+               Requires<[IsThumb, HasV8MBaseline, HasLdStExclusive]>, Sched<[WriteST]> {
   bits<4> Rd;
   bits<4> Rt;
   bits<12> addr;

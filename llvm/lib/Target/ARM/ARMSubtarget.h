@@ -171,6 +171,9 @@ protected:
   /// Thumb.
   bool SupportsTailCall = false;
 
+  /// HasNoLdStExclusive - True if the subtarget does not support LDREX/STREX
+  bool HasNoLdStExclusive = false;
+
   /// RestrictIT - If true, the subtarget disallows generation of complex IT
   ///  blocks.
   bool RestrictIT = false;
@@ -331,6 +334,7 @@ public:
   bool hasVFP3Base() const { return hasVFPv3D16SP(); }
   bool hasVFP4Base() const { return hasVFPv4D16SP(); }
   bool hasFPARMv8Base() const { return hasFPARMv8D16SP(); }
+  bool hasNoLdStExclusive() const { return HasNoLdStExclusive; }
 
   bool hasAnyDataBarrier() const {
     return HasDataBarrier || (hasV6Ops() && !isThumb());

@@ -180,6 +180,9 @@ static bool atomicSizeSupported(const TargetLowering *TLI, Inst *I) {
 }
 
 bool AtomicExpand::runOnFunction(Function &F) {
+  bool HasNoLdStex = F.getFnAttribute("target-features").getValueAsString().contains("+no-ldstex")
+                     && !F.getFnAttribute("target-features").getValueAsString().contains("-no-ldstex");
+
   auto *TPC = getAnalysisIfAvailable<TargetPassConfig>();
   if (!TPC)
     return false;
@@ -309,6 +312,7 @@ bool AtomicExpand::runOnFunction(Function &F) {
       }
     }
 
+    if(!HasNoLdStex) {
     if (LI)
       MadeChange |= tryExpandAtomicLoad(LI);
     else if (SI)
@@ -336,6 +340,7 @@ bool AtomicExpand::runOnFunction(Function &F) {
       }
     } else if (CASI)
       MadeChange |= tryExpandAtomicCmpXchg(CASI);
+    }
   }
   return MadeChange;
 }

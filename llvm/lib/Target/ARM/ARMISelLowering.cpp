@@ -1570,6 +1570,53 @@ ARMTargetLowering::ARMTargetLowering(const TargetMachine &TM,
     }
   }
 
+  if (Subtarget->hasNoLdStExclusive()) {
+    setOperationAction(ISD::ATOMIC_CMP_SWAP,  MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_CMP_SWAP,  MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_CMP_SWAP,  MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_CMP_SWAP,  MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_SWAP,      MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_SWAP,      MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_SWAP,      MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_SWAP,      MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_ADD,  MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_ADD,  MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_ADD,  MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_ADD,  MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_SUB,  MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_SUB,  MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_SUB,  MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_SUB,  MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_AND,  MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_AND,  MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_AND,  MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_AND,  MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_OR,   MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_OR,   MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_OR,   MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_OR,   MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_XOR,  MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_XOR,  MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_XOR,  MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_XOR,  MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_NAND, MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_NAND, MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_NAND, MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_NAND, MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MIN, MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MIN, MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MIN, MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MIN, MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MAX, MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MAX, MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MAX, MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_MAX, MVT::i8, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_UMIN, MVT::i64, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_UMIN, MVT::i32, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_UMIN, MVT::i16, Expand);
+    setOperationAction(ISD::ATOMIC_LOAD_UMIN, MVT::i8, Expand);
+  }
+
   // We have target-specific dag combine patterns for the following nodes:
   // ARMISD::VMOVRRD  - No need to call setTargetDAGCombine
   setTargetDAGCombine(
@@ -21293,7 +21340,7 @@ ARMTargetLowering::shouldExpandAtomicRMWInIR(AtomicRMWInst *AI) const {
     hasAtomicRMW = Subtarget->hasV7Ops();
   else
     hasAtomicRMW = Subtarget->hasV6Ops();
-  if (Size <= (Subtarget->isMClass() ? 32U : 64U) && hasAtomicRMW) {
+  if (Size <= (Subtarget->isMClass() ? 32U : 64U) && hasAtomicRMW && !Subtarget->hasNoLdStExclusive()) {
     // At -O0, fast-regalloc cannot cope with the live vregs necessary to
     // implement atomicrmw without spilling. If the target address is also on
     // the stack and close enough to the spill slot, this can lead to a
