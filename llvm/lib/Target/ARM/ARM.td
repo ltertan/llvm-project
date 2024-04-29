@@ -493,6 +493,9 @@ def FeatureNoNegativeImmediates
                                              "equivalent when the immediate does "
                                              "not fit in the encoding.">;
 
+def FeatureNoLdmStm : SubtargetFeature<"no-ldm-stm",
+    "NoLdmStm", "true", "Do not generate ldm, stm, ldrd and strd instructions.">;
+
 // Use the MachineScheduler for instruction scheduling for the subtarget.
 def FeatureUseMISched: SubtargetFeature<"use-misched", "UseMISched", "true",
                                         "Use the MachineScheduler">;

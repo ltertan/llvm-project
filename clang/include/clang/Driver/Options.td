@@ -3850,6 +3850,8 @@ def mnocrc : Flag<["-"], "mnocrc">, Group<m_arm_Features_Group>,
 def mno_neg_immediates: Flag<["-"], "mno-neg-immediates">, Group<m_arm_Features_Group>,
   HelpText<"Disallow converting instructions with negative immediates to their negation or inversion.">;
 } // let Flags = [TargetSpecific]
+def mno_ldm_stm : Flag<["-"], "mno-ldm-stm">, Group<m_arm_Features_Group>,
+  HelpText<"Disallow generation of ldm/stm/ldrd/strd instructions (ARM only).">;
 def mcmse : Flag<["-"], "mcmse">, Group<m_arm_Features_Group>,
   Flags<[NoXarchOption,CC1Option]>,
   HelpText<"Allow use of CMSE (Armv8-M Security Extensions)">,

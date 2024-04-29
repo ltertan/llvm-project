@@ -171,6 +171,10 @@ protected:
   /// Thumb.
   bool SupportsTailCall = false;
 
+  /// Dissalow the usage of ldm, stm, ldrd and strd by the ARMLoadStoreOptimizer
+  /// in order to assume unaligned 32-bit data and generate optimal instructions.
+  bool NoLdmStm = false;
+
   /// RestrictIT - If true, the subtarget disallows generation of complex IT
   ///  blocks.
   bool RestrictIT = false;
@@ -331,6 +335,8 @@ public:
   bool hasVFP3Base() const { return hasVFPv3D16SP(); }
   bool hasVFP4Base() const { return hasVFPv4D16SP(); }
   bool hasFPARMv8Base() const { return hasFPARMv8D16SP(); }
+
+  bool noLdmStm() const { return NoLdmStm; }
 
   bool hasAnyDataBarrier() const {
     return HasDataBarrier || (hasV6Ops() && !isThumb());

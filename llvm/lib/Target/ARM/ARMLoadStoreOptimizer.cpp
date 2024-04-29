@@ -2116,6 +2116,9 @@ bool ARMLoadStoreOpt::runOnMachineFunction(MachineFunction &Fn) {
   TII = STI->getInstrInfo();
   TRI = STI->getRegisterInfo();
 
+  if (STI->noLdmStm())
+    return false;
+
   RegClassInfoValid = false;
   isThumb2 = AFI->isThumb2Function();
   isThumb1 = AFI->isThumbFunction() && !isThumb2;
@@ -2259,6 +2262,8 @@ bool ARMPreAllocLoadStoreOpt::CanFormLdStDWord(
     Register &PredReg, ARMCC::CondCodes &Pred, bool &isT2) {
   // Make sure we're allowed to generate LDRD/STRD.
   if (!STI->hasV5TEOps())
+    return false;
+  if (STI->noLdmStm())
     return false;
 
   // FIXME: VLDRS / VSTRS -> VLDRD / VSTRD

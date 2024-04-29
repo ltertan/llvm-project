@@ -910,6 +910,9 @@ fp16_fml_fallthrough:
   if (Args.hasArg(options::OPT_mno_neg_immediates))
     Features.push_back("+no-neg-immediates");
 
+  if (Args.hasArg(options::OPT_mno_ldm_stm))
+    Features.push_back("+no-ldm-stm");
+
   // Enable/disable straight line speculation hardening.
   if (Arg *A = Args.getLastArg(options::OPT_mharden_sls_EQ)) {
     StringRef Scope = A->getValue();
