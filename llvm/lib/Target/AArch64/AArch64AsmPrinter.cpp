@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "AArch64.h"
+// #include "AArch64ConstantPoolValue.h"
 #include "AArch64MCInstLower.h"
 #include "AArch64MachineFunctionInfo.h"
 #include "AArch64RegisterInfo.h"
@@ -86,6 +87,8 @@ public:
   bool lowerOperand(const MachineOperand &MO, MCOperand &MCOp) const {
     return MCInstLowering.lowerOperand(MO, MCOp);
   }
+
+  void emitMachineConstantPoolValue(MachineConstantPoolValue *MCPV) override;
 
   void emitStartOfAsmFile(Module &M) override;
   void emitJumpTableInfo() override;
@@ -1290,6 +1293,22 @@ void AArch64AsmPrinter::LowerSTATEPOINT(MCStreamer &OutStreamer, StackMaps &SM,
   MCSymbol *MILabel = Ctx.createTempSymbol();
   OutStreamer.emitLabel(MILabel);
   SM.recordStatepoint(*MILabel, MI);
+}
+
+// TODO : Currently handling only GlobalValue
+void AArch64AsmPrinter::emitMachineConstantPoolValue(MachineConstantPoolValue *MCPV) {
+  const DataLayout &DL = getDataLayout();
+  int Size = DL.getTypeAllocSize(MCPV->getType());
+  AArch64ConstantPoolValue *ACPV = static_cast<AArch64ConstantPoolValue*>(MCPV);
+
+  if (ACPV->isGlobalValue()) {
+    const GlobalValue *GV = cast<AArch64ConstantPoolConstant>(ACPV)->getGV();
+    const MCExpr *Expr =
+        MCSymbolRefExpr::create(getSymbol(GV),MCSymbolRefExpr::VK_None,
+                            OutContext);
+    OutStreamer->emitValue(Expr, Size);
+   }
+   return;
 }
 
 void AArch64AsmPrinter::LowerFAULTING_OP(const MachineInstr &FaultingMI) {

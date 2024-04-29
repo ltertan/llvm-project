@@ -1201,6 +1201,8 @@ bool AArch64CallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   const AArch64TargetLowering &TLI = *getTLI<AArch64TargetLowering>();
   const AArch64Subtarget &Subtarget = MF.getSubtarget<AArch64Subtarget>();
 
+  if (Subtarget.genLongCalls())
+    return false;
   // Arm64EC has extra requirements for varargs calls; bail out for now.
   if (Info.IsVarArg && Subtarget.isWindowsArm64EC())
     return false;

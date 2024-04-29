@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+// #include "AArch64ConstantPoolValue.h"
 #include "AArch64ISelLowering.h"
 #include "AArch64CallingConvention.h"
 #include "AArch64ExpandImm.h"
@@ -6343,7 +6344,6 @@ SDValue AArch64TargetLowering::LowerFormalArguments(
   assert(Chain.getOpcode() == ISD::EntryToken && "Unexpected Chain value");
   SDValue Glue = Chain.getValue(1);
 
-  SmallVector<SDValue, 16> ArgValues;
   unsigned ExtraArgLocs = 0;
   for (unsigned i = 0, e = Ins.size(); i != e; ++i) {
     CCValAssign &VA = ArgLocs[i - ExtraArgLocs];
@@ -7560,10 +7560,15 @@ AArch64TargetLowering::LowerCall(CallLoweringInfo &CLI,
     InGlue = Chain.getValue(1);
   }
 
+  auto *G = dyn_cast<GlobalAddressSDNode>(Callee);
+  if (G && Subtarget->genLongCalls()) {
+    auto GV = G->getGlobal();
+    Callee = getGVAddr(GV,DL,DAG);
+  }
   // If the callee is a GlobalAddress/ExternalSymbol node (quite common, every
   // direct call is) turn it into a TargetGlobalAddress/TargetExternalSymbol
   // node so that legalize doesn't hack it.
-  if (auto *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
+  else if (auto *G = dyn_cast<GlobalAddressSDNode>(Callee)) {
     auto GV = G->getGlobal();
     unsigned OpFlags =
         Subtarget->classifyGlobalFunctionReference(GV, getTargetMachine());
@@ -7968,6 +7973,26 @@ SDValue AArch64TargetLowering::getAddrTiny(NodeTy *N, SelectionDAG &DAG,
   EVT Ty = getPointerTy(DAG.getDataLayout());
   SDValue Sym = getTargetNode(N, Ty, DAG, Flags);
   return DAG.getNode(AArch64ISD::ADR, DL, Ty, Sym);
+}
+
+SDValue AArch64TargetLowering::getGVAddr(const GlobalValue *GV ,SDLoc DL ,SelectionDAG &DAG) const {
+
+  //AArch64FunctionInfo *FuncInfo =
+  //    DAG.getMachineFunction().getInfo<AArch64FunctionInfo>();
+  //unsigned ARMPCLabelIndex = FuncInfo->createPICLabelUId();
+  auto PtrVt = getPointerTy(DAG.getDataLayout());
+
+  AArch64ConstantPoolValue *CPV = AArch64ConstantPoolConstant::Create(GV);
+
+  SDValue HiAddr = DAG.getTargetConstantPool(CPV, PtrVt, Align(8),0,AArch64II::MO_PAGE);
+  SDValue LoAddr = DAG.getTargetConstantPool(CPV, PtrVt, Align(8),0,AArch64II::MO_PAGEOFF |  AArch64II::MO_NC);
+
+  SDValue ADRP = DAG.getNode(AArch64ISD::ADRP, DL, PtrVt, HiAddr);
+  SDValue  LabAddr =DAG.getNode(AArch64ISD::ADDlow, DL, PtrVt, ADRP, LoAddr);
+
+  return DAG.getLoad(
+            PtrVt, DL, DAG.getEntryNode(), LabAddr,
+            MachinePointerInfo::getConstantPool(DAG.getMachineFunction()));
 }
 
 SDValue AArch64TargetLowering::LowerGlobalAddress(SDValue Op,
