@@ -561,7 +561,7 @@ class Instruction : InstructionEncoding {
   bit mayLoad      = ?;         // Is it possible for this inst to read memory?
   bit mayStore     = ?;         // Is it possible for this inst to write memory?
   bit mayRaiseFPException = false; // Can this raise a floating-point exception?
-  bit isCandidateForFPInstrumentation = 0; // Is this a candidate
+  bit isCandidateForFPInstrumentation = false; // Is this a candidate
                                            // for FP instrumentation?
   bit isConvertibleToThreeAddress = false;  // Can this 2-addr instruction promote?
   bit isCommutable = false;     // Is this 3 operand instruction commutable?

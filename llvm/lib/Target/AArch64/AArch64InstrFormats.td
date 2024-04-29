@@ -8469,7 +8469,7 @@ multiclass SIMDThreeSameVectorFMLIndex<bit U, bits<4> opc, string asm,
 
 multiclass SIMDFPIndexed<bit U, bits<4> opc, string asm,
                          SDPatternOperator OpNode> {
-  let mayRaiseFPException = 1, Uses = [FPCR] in {
+  let isCandidateForFPInstrumentation = 1, let mayRaiseFPException = 1, Uses = [FPCR] in {
   let Predicates = [HasNEON, HasFullFP16] in {
   def v4i16_indexed : BaseSIMDIndexed<0, U, 0, 0b00, opc,
                                       V64, V64,
