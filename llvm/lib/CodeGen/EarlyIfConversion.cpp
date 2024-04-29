@@ -37,6 +37,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Diab/Diagnostics.h"
 
 using namespace llvm;
 
@@ -51,6 +52,9 @@ BlockInstrLimit("early-ifcvt-limit", cl::init(30), cl::Hidden,
 // Stress testing mode - disable heuristics.
 static cl::opt<bool> Stress("stress-early-ifcvt", cl::Hidden,
   cl::desc("Turn all knobs to 11"));
+
+extern cl::opt<bool> SpeculateFPInsts;
+extern cl::opt<bool> DiagnoseFPInstsSpeculation;
 
 STATISTIC(NumDiamondsSeen,  "Number of diamonds");
 STATISTIC(NumDiamondsConv,  "Number of diamonds converted");
@@ -212,6 +216,9 @@ bool SSAIfConv::canSpeculateInstrs(MachineBasicBlock *MBB) {
        llvm::make_range(MBB->begin(), MBB->getFirstTerminator())) {
     if (MI.isDebugInstr())
       continue;
+
+    if (!SpeculateFPInsts && MI.isCandidateForFPInstrumentation()) return false;
+
 
     if (++InstrCount > BlockInstrLimit && !Stress) {
       LLVM_DEBUG(dbgs() << printMBBReference(*MBB) << " has more than "
@@ -1060,11 +1067,46 @@ bool EarlyIfConverter::shouldConvertIf() {
   return ShouldConvert;
 }
 
+static bool AnyFloatingPointInMachineBasicBlock(const MachineBasicBlock *MBB) {
+  for (auto I = MBB->begin(), E = MBB->end(); I != E; ++I) {
+    const MachineInstr &MI = *I;
+    if (MI.isCandidateForFPInstrumentation())
+      return true;
+  }
+  return false;
+}
+
+static void PrintDiabMachineBasicBlockDiagnostic(const StringRef &FuncName,
+                                                 MachineBasicBlock *MBB,
+                                                 DiabIssue Issue,
+                                                 raw_ostream &OS) {
+  auto I = MBB->getFirstNonPHI();
+  if (I == MBB->end()) return;
+
+  PrintDiabDiagnostic(FuncName,
+                      I->getDebugLoc(),
+                      Issue,
+                      OS);
+}
+
 /// Attempt repeated if-conversion on MBB, return true if successful.
 ///
 bool EarlyIfConverter::tryConvertIf(MachineBasicBlock *MBB) {
   bool Changed = false;
   while (IfConv.canConvertIf(MBB) && shouldConvertIf()) {
+    if (DiagnoseFPInstsSpeculation) {
+      if (AnyFloatingPointInMachineBasicBlock(IfConv.TBB) ||
+          AnyFloatingPointInMachineBasicBlock(IfConv.FBB)) {
+        MachineBasicBlock *MovedBB = IfConv.TBB != IfConv.Tail ?
+                                     IfConv.TBB :
+                                     IfConv.FBB;
+        PrintDiabMachineBasicBlockDiagnostic(MBB->getParent()->getName(),
+                                             MovedBB,
+                                             DIAB_ISSUE_TCDIAB_17015,
+                                             dbgs());
+      }
+    }
+
     // If-convert MBB and update analyses.
     invalidateTraces();
     SmallVector<MachineBasicBlock*, 4> RemovedBlocks;

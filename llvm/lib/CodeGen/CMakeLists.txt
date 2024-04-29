@@ -267,10 +267,12 @@ add_llvm_component_library(LLVMCodeGen
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/CodeGen/PBQP
 
   LINK_LIBS ${LLVM_PTHREAD_LIB} ${MLLinkDeps}
+  LINK_LIBS LLVMDiab
 
   DEPENDS
   intrinsics_gen
   ${MLDeps}
+  LLVMDiab
 
   LINK_COMPONENTS
   Analysis

@@ -74,6 +74,7 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
+#include "llvm/Diab/Diagnostics.h"
 #include <algorithm>
 #include <cassert>
 #include <climits>
@@ -179,6 +180,10 @@ static cl::opt<bool> EnableMergeCompatibleInvokes(
 static cl::opt<unsigned> MaxSwitchCasesPerResult(
     "max-switch-cases-per-result", cl::Hidden, cl::init(16),
     cl::desc("Limit cases to analyze when converting a switch to select"));
+
+cl::opt<bool> DiagnoseFPInstsSpeculation(
+       "diagnose-fp-insts-speculation", cl::Hidden, cl::init(false),
+       cl::desc("Diagnose the speculation of floating-point instructions"));
 
 STATISTIC(NumBitMaps, "Number of switch instructions turned into bitmaps");
 STATISTIC(NumLinearMaps,
@@ -3287,6 +3292,29 @@ static bool FoldCondBranchOnValueKnownInPredecessor(BranchInst *BI,
   return EverChanged;
 }
 
+static bool AnyFloatingPointInBasicBlock(const BasicBlock *BB) {
+  for (auto BI = BB->begin(), BE = BB->end(); BI != BE; ++BI) {
+    const Instruction &I = *BI;
+
+    if (isUnsafeFloatingPointInst(&I))
+      return true;
+  }
+  return false;
+}
+
+static void PrintDiabBasicBlockDiagnostic(const StringRef &FuncName,
+                                          const BasicBlock *BB,
+                                          DiabIssue Issue,
+                                          raw_ostream &OS) {
+  auto I = BB->getFirstNonPHI();
+  if (!I) return;
+
+  PrintDiabDiagnostic(FuncName,
+                      I->getDebugLoc(),
+                      Issue,
+                      OS);
+}
+
 /// Given a BB that starts with the specified two-entry PHI node,
 /// see if we can eliminate it.
 static bool FoldTwoEntryPHINode(PHINode *PN, const TargetTransformInfo &TTI,
@@ -3437,6 +3465,17 @@ static bool FoldTwoEntryPHINode(PHINode *PN, const TargetTransformInfo &TTI,
   LLVM_DEBUG(dbgs() << "FOUND IF CONDITION!  " << *IfCond
                     << "  T: " << IfTrue->getName()
                     << "  F: " << IfFalse->getName() << "\n");
+
+  if (DiagnoseFPInstsSpeculation) {
+    if (AnyFloatingPointInBasicBlock(IfTrue) ||
+        AnyFloatingPointInBasicBlock(IfFalse)) {
+      auto Fn = BB->getParent();
+      PrintDiabBasicBlockDiagnostic(Fn->getName(),
+                                    IfTrue,
+                                    DIAB_ISSUE_TCDIAB_17015,
+                                    dbgs());
+    }
+  }
 
   // If we can still promote the PHI nodes after this gauntlet of tests,
   // do all of the PHI's now.

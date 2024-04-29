@@ -88,8 +88,11 @@ add_llvm_component_library(LLVMTransformUtils
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Transforms/Utils
 
+  LINK_LIBS LLVMDiab
+
   DEPENDS
   intrinsics_gen
+  LLVMDiab
 
   LINK_COMPONENTS
   Analysis

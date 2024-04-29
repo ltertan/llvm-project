@@ -85,6 +85,9 @@ using namespace llvm::PatternMatch;
 static cl::opt<unsigned> DomConditionsMaxUses("dom-conditions-max-uses",
                                               cl::Hidden, cl::init(20));
 
+cl::opt<bool> SpeculateFPInsts(
+    "speculate-fp-insts", cl::Hidden, cl::init(true),
+    cl::desc("Allow speculation of floating-point instructions"));
 
 /// Returns the bitwidth of the given scalar or pointer type. For vector types,
 /// returns the element type's bitwidth.
@@ -6043,6 +6046,28 @@ bool llvm::mustSuppressSpeculation(const LoadInst &LI) {
     F.hasFnAttribute(Attribute::SanitizeHWAddress);
 }
 
+bool llvm::isUnsafeFloatingPointInst(const Instruction *Inst) {
+  if (!Inst)
+    return false;
+
+  switch (Inst->getOpcode()) {
+  default:
+    return false;
+  case Instruction::FAdd:
+  case Instruction::FSub:
+  case Instruction::FMul:
+  case Instruction::FDiv:
+  case Instruction::FRem:
+  case Instruction::FPToUI:
+  case Instruction::FPToSI:
+  case Instruction::UIToFP:
+  case Instruction::SIToFP:
+  case Instruction::FPTrunc:
+  case Instruction::FPExt:
+    return true;
+  }
+}
+
 bool llvm::isSafeToSpeculativelyExecute(const Instruction *Inst,
                                         const Instruction *CtxI,
                                         AssumptionCache *AC,
@@ -6075,6 +6100,9 @@ bool llvm::isSafeToSpeculativelyExecuteWithOpcode(
            hasEqualReturnAndLeadingOperandTypes(Inst, 1));
   }
 #endif
+
+  if (!SpeculateFPInsts && isUnsafeFloatingPointInst(Inst))
+    return false;
 
   switch (Opcode) {
   default:

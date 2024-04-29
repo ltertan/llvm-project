@@ -769,6 +769,8 @@ bool isSafeToSpeculativelyExecute(const Instruction *I,
                                   const DominatorTree *DT = nullptr,
                                   const TargetLibraryInfo *TLI = nullptr);
 
+bool isUnsafeFloatingPointInst(const Value *V);
+
 /// This returns the same result as isSafeToSpeculativelyExecute if Opcode is
 /// the actual opcode of Inst. If the provided and actual opcode differ, the
 /// function (virtually) overrides the opcode of Inst with the provided
