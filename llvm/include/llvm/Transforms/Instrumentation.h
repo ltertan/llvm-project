@@ -75,6 +75,9 @@ struct GCOVOptions {
 
   // Regexes separated by a semi-colon to filter the files to not instrument.
   std::string Exclude;
+
+  // Constructor priority to use for the generated gcov constructor
+  int ConstructorPriority;
 };
 
 // The pgo-specific indirect call promotion function declared below is used by

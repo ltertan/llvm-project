@@ -66,6 +66,8 @@ static cl::opt<std::string> DefaultGCOVVersion("default-gcov-version",
 static cl::opt<bool> AtomicCounter("gcov-atomic-counter", cl::Hidden,
                                    cl::desc("Make counter updates atomic"));
 
+static cl::opt<int> DefaultConstructorPriority("gcov-const-priority", cl::init(0), cl::Hidden, cl::ValueRequired);
+
 // Returns the number of words which will be used to represent this string.
 static unsigned wordsOfString(StringRef s) {
   // Length + NUL-terminated string + 0~3 padding NULs.
@@ -78,6 +80,7 @@ GCOVOptions GCOVOptions::getDefault() {
   Options.EmitData = true;
   Options.NoRedZone = false;
   Options.Atomic = AtomicCounter;
+  Options.ConstructorPriority = DefaultConstructorPriority;
 
   if (DefaultGCOVVersion.size() != 4) {
     llvm::report_fatal_error(Twine("Invalid -default-gcov-version: ") +
@@ -1026,7 +1029,8 @@ void GCOVProfiler::emitGlobalConstructor(
   Builder.CreateCall(GCOVInit, {WriteoutF, ResetF});
   Builder.CreateRetVoid();
 
-  appendToGlobalCtors(*M, F, 0);
+  Options.ConstructorPriority = DefaultConstructorPriority;
+  appendToGlobalCtors(*M, F, Options.ConstructorPriority);
 }
 
 FunctionCallee GCOVProfiler::getStartFileFunc(const TargetLibraryInfo *TLI) {
