@@ -4251,10 +4251,12 @@ multiclass N2VNSh_HSD<bit op24, bit op23, bits<4> op11_8, bit op7, bit op6,
 //   VADD     : Vector Add (integer and floating-point)
 defm VADD     : N3V_QHSD<0, 0, 0b1000, 0, IIC_VBINiD, IIC_VBINiQ, "vadd", "i",
                          add, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VADDfd   : N3VD<0, 0, 0b00, 0b1101, 0, IIC_VBIND, "vadd", "f32",
                      v2f32, v2f32, fadd, 1>;
 def  VADDfq   : N3VQ<0, 0, 0b00, 0b1101, 0, IIC_VBINQ, "vadd", "f32",
                      v4f32, v4f32, fadd, 1>;
+}
 def  VADDhd   : N3VD<0, 0, 0b01, 0b1101, 0, IIC_VBIND, "vadd", "f16",
                      v4f16, v4f16, fadd, 1>,
                 Requires<[HasNEON,HasFullFP16]>;
@@ -4314,10 +4316,12 @@ def  VMULpd   : N3VDInt<1, 0, 0b00, 0b1001, 1, N3RegFrm, IIC_VMULi16D, "vmul",
                         "p8", v8i8, v8i8, int_arm_neon_vmulp, 1>;
 def  VMULpq   : N3VQInt<1, 0, 0b00, 0b1001, 1, N3RegFrm, IIC_VMULi16Q, "vmul",
                         "p8", v16i8, v16i8, int_arm_neon_vmulp, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMULfd   : N3VD<1, 0, 0b00, 0b1101, 1, IIC_VFMULD, "vmul", "f32",
                      v2f32, v2f32, fmul, 1>;
 def  VMULfq   : N3VQ<1, 0, 0b00, 0b1101, 1, IIC_VFMULQ, "vmul", "f32",
                      v4f32, v4f32, fmul, 1>;
+}
 def  VMULhd   : N3VD<1, 0, 0b01, 0b1101, 1, IIC_VFMULD, "vmul", "f16",
                      v4f16, v4f16, fmul, 1>,
                 Requires<[HasNEON,HasFullFP16]>;
@@ -4325,9 +4329,11 @@ def  VMULhq   : N3VQ<1, 0, 0b01, 0b1101, 1, IIC_VFMULQ, "vmul", "f16",
                      v8f16, v8f16, fmul, 1>,
                 Requires<[HasNEON,HasFullFP16]>;
 defm VMULsl   : N3VSL_HS<0b1000, "vmul", mul>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMULslfd : N3VDSL<0b10, 0b1001, IIC_VBIND, "vmul", "f32", v2f32, fmul>;
 def  VMULslfq : N3VQSL<0b10, 0b1001, IIC_VBINQ, "vmul", "f32", v4f32,
                        v2f32, fmul>;
+}
 def  VMULslhd : N3VDSL16<0b01, 0b1001, "vmul", "f16", v4f16, fmul>,
                 Requires<[HasNEON,HasFullFP16]>;
 def  VMULslhq : N3VQSL16<0b01, 0b1001, "vmul", "f16", v8f16,
@@ -4455,12 +4461,14 @@ defm VQDMULLsl: N3VLIntSL_HS<0, 0b1011, IIC_VMULi16D,
 //   VMLA     : Vector Multiply Accumulate (integer and floating-point)
 defm VMLA     : N3VMulOp_QHS<0, 0, 0b1001, 0, IIC_VMACi16D, IIC_VMACi32D,
                              IIC_VMACi16Q, IIC_VMACi32Q, "vmla", "i", add>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMLAfd   : N3VDMulOp<0, 0, 0b00, 0b1101, 1, IIC_VMACD, "vmla", "f32",
                           v2f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
 def  VMLAfq   : N3VQMulOp<0, 0, 0b00, 0b1101, 1, IIC_VMACQ, "vmla", "f32",
                           v4f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
+}
 def  VMLAhd   : N3VDMulOp<0, 0, 0b01, 0b1101, 1, IIC_VMACD, "vmla", "f16",
                           v4f16, fmul_su, fadd_mlx>,
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
@@ -4469,12 +4477,14 @@ def  VMLAhq   : N3VQMulOp<0, 0, 0b01, 0b1101, 1, IIC_VMACQ, "vmla", "f16",
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
 defm VMLAsl   : N3VMulOpSL_HS<0b0000, IIC_VMACi16D, IIC_VMACi32D,
                               IIC_VMACi16Q, IIC_VMACi32Q, "vmla", "i", add>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMLAslfd : N3VDMulOpSL<0b10, 0b0001, IIC_VMACD, "vmla", "f32",
                             v2f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
 def  VMLAslfq : N3VQMulOpSL<0b10, 0b0001, IIC_VMACQ, "vmla", "f32",
                             v4f32, v2f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
+}
 def  VMLAslhd : N3VDMulOpSL16<0b01, 0b0001, IIC_VMACD, "vmla", "f16",
                             v4f16, fmul, fadd>,
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
@@ -4657,12 +4667,14 @@ def : Pat<(v2i64 (saddsat (v2i64 QPR:$src1),
 //   VMLS     : Vector Multiply Subtract (integer and floating-point)
 defm VMLS     : N3VMulOp_QHS<1, 0, 0b1001, 0, IIC_VMACi16D, IIC_VMACi32D,
                              IIC_VMACi16Q, IIC_VMACi32Q, "vmls", "i", sub>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMLSfd   : N3VDMulOp<0, 0, 0b10, 0b1101, 1, IIC_VMACD, "vmls", "f32",
                           v2f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
 def  VMLSfq   : N3VQMulOp<0, 0, 0b10, 0b1101, 1, IIC_VMACQ, "vmls", "f32",
                           v4f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
+}
 def  VMLShd   : N3VDMulOp<0, 0, 0b11, 0b1101, 1, IIC_VMACD, "vmls", "f16",
                           v4f16, fmul, fsub>,
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
@@ -4671,12 +4683,14 @@ def  VMLShq   : N3VQMulOp<0, 0, 0b11, 0b1101, 1, IIC_VMACQ, "vmls", "f16",
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
 defm VMLSsl   : N3VMulOpSL_HS<0b0100, IIC_VMACi16D, IIC_VMACi32D,
                               IIC_VMACi16Q, IIC_VMACi32Q, "vmls", "i", sub>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMLSslfd : N3VDMulOpSL<0b10, 0b0101, IIC_VMACD, "vmls", "f32",
                             v2f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
 def  VMLSslfq : N3VQMulOpSL<0b10, 0b0101, IIC_VMACQ, "vmls", "f32",
                             v4f32, v2f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON, UseFPVMLx]>;
+}
 def  VMLSslhd : N3VDMulOpSL16<0b01, 0b0101, IIC_VMACD, "vmls", "f16",
                             v4f16, fmul, fsub>,
                 Requires<[HasNEON, HasFullFP16, UseFPVMLx]>;
@@ -4747,6 +4761,7 @@ def : Pat<(v2i64 (ssubsat (v2i64 QPR:$src1),
 }
 
 // Fused Vector Multiply-Accumulate and Fused Multiply-Subtract Operations.
+let isCandidateForFPInstrumentation = 1 in {
 def  VFMAfd   : N3VDMulOp<0, 0, 0b00, 0b1100, 1, IIC_VFMACD, "vfma", "f32",
                           v2f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON,HasVFP4,UseFusedMAC]>;
@@ -4754,6 +4769,7 @@ def  VFMAfd   : N3VDMulOp<0, 0, 0b00, 0b1100, 1, IIC_VFMACD, "vfma", "f32",
 def  VFMAfq   : N3VQMulOp<0, 0, 0b00, 0b1100, 1, IIC_VFMACQ, "vfma", "f32",
                           v4f32, fmul_su, fadd_mlx>,
                 Requires<[HasNEON,HasVFP4,UseFusedMAC]>;
+}
 def  VFMAhd   : N3VDMulOp<0, 0, 0b01, 0b1100, 1, IIC_VFMACD, "vfma", "f16",
                           v4f16, fmul, fadd>,
                 Requires<[HasNEON,HasFullFP16,UseFusedMAC]>;
@@ -4763,12 +4779,14 @@ def  VFMAhq   : N3VQMulOp<0, 0, 0b01, 0b1100, 1, IIC_VFMACQ, "vfma", "f16",
                 Requires<[HasNEON,HasFullFP16,UseFusedMAC]>;
 
 //   Fused Vector Multiply Subtract (floating-point)
+let isCandidateForFPInstrumentation = 1 in {
 def  VFMSfd   : N3VDMulOp<0, 0, 0b10, 0b1100, 1, IIC_VFMACD, "vfms", "f32",
                           v2f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON,HasVFP4,UseFusedMAC]>;
 def  VFMSfq   : N3VQMulOp<0, 0, 0b10, 0b1100, 1, IIC_VFMACQ, "vfms", "f32",
                           v4f32, fmul_su, fsub_mlx>,
                 Requires<[HasNEON,HasVFP4,UseFusedMAC]>;
+}
 def  VFMShd   : N3VDMulOp<0, 0, 0b11, 0b1100, 1, IIC_VFMACD, "vfms", "f16",
                           v4f16, fmul, fsub>,
                 Requires<[HasNEON,HasFullFP16,UseFusedMAC]>;
@@ -5066,10 +5084,12 @@ let Predicates = [HasNEON,HasV8_3a] in {
 //   VSUB     : Vector Subtract (integer and floating-point)
 defm VSUB     : N3V_QHSD<1, 0, 0b1000, 0, IIC_VSUBiD, IIC_VSUBiQ,
                          "vsub", "i", sub, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VSUBfd   : N3VD<0, 0, 0b10, 0b1101, 0, IIC_VBIND, "vsub", "f32",
                      v2f32, v2f32, fsub, 0>;
 def  VSUBfq   : N3VQ<0, 0, 0b10, 0b1101, 0, IIC_VBINQ, "vsub", "f32",
                      v4f32, v4f32, fsub, 0>;
+}
 def  VSUBhd   : N3VD<0, 0, 0b11, 0b1101, 0, IIC_VBIND, "vsub", "f16",
                      v4f16, v4f16, fsub, 0>,
                 Requires<[HasNEON,HasFullFP16]>;
@@ -5118,10 +5138,12 @@ def : Pat<(v2i32 (trunc (ARMvshruImm (sub (v2i64 QPR:$Vn), QPR:$Vm), 32))),
 //   VCEQ     : Vector Compare Equal
 defm VCEQ     : N3V_QHS_cmp<1, 0, 0b1000, 1, IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q,
                             IIC_VSUBi4Q, "vceq", "i", ARMCCeq, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VCEQfd   : N3VD_cmp<0,0,0b00,0b1110,0, IIC_VBIND, "vceq", "f32", v2i32, v2f32,
                          ARMCCeq, 1>;
 def  VCEQfq   : N3VQ_cmp<0,0,0b00,0b1110,0, IIC_VBINQ, "vceq", "f32", v4i32, v4f32,
                          ARMCCeq, 1>;
+}
 def  VCEQhd   : N3VD_cmp<0,0,0b01,0b1110,0, IIC_VBIND, "vceq", "f16", v4i16, v4f16,
                          ARMCCeq, 1>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5138,10 +5160,12 @@ defm VCGEs    : N3V_QHS_cmp<0, 0, 0b0011, 1, IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi
                             IIC_VSUBi4Q, "vcge", "s", ARMCCge, 0>;
 defm VCGEu    : N3V_QHS_cmp<1, 0, 0b0011, 1, IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q,
                             IIC_VSUBi4Q, "vcge", "u", ARMCChs, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VCGEfd   : N3VD_cmp<1,0,0b00,0b1110,0, IIC_VBIND, "vcge", "f32", v2i32, v2f32,
                          ARMCCge, 0>;
 def  VCGEfq   : N3VQ_cmp<1,0,0b00,0b1110,0, IIC_VBINQ, "vcge", "f32", v4i32, v4f32,
                          ARMCCge, 0>;
+}
 def  VCGEhd   : N3VD_cmp<1,0,0b01,0b1110,0, IIC_VBIND, "vcge", "f16", v4i16, v4f16,
                          ARMCCge, 0>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5161,10 +5185,12 @@ defm VCGTs    : N3V_QHS_cmp<0, 0, 0b0011, 0, IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi
                             IIC_VSUBi4Q, "vcgt", "s", ARMCCgt, 0>;
 defm VCGTu    : N3V_QHS_cmp<1, 0, 0b0011, 0, IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q,
                             IIC_VSUBi4Q, "vcgt", "u", ARMCChi, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VCGTfd   : N3VD_cmp<1,0,0b10,0b1110,0, IIC_VBIND, "vcgt", "f32", v2i32, v2f32,
                          ARMCCgt, 0>;
 def  VCGTfq   : N3VQ_cmp<1,0,0b10,0b1110,0, IIC_VBINQ, "vcgt", "f32", v4i32, v4f32,
                          ARMCCgt, 0>;
+}
 def  VCGThd   : N3VD_cmp<1,0,0b11,0b1110,0, IIC_VBIND, "vcgt", "f16", v4i16, v4f16,
                          ARMCCgt, 0>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5180,10 +5206,12 @@ defm VCLTz    : N2V_QHS_cmp<0b11, 0b11, 0b01, 0b00100, 0, "vclt", "s",
 }
 
 //   VACGE    : Vector Absolute Compare Greater Than or Equal (aka VCAGE)
+let isCandidateForFPInstrumentation = 1 in {
 def  VACGEfd   : N3VDInt<1, 0, 0b00, 0b1110, 1, N3RegFrm, IIC_VBIND, "vacge",
                         "f32", v2i32, v2f32, int_arm_neon_vacge, 0>;
 def  VACGEfq   : N3VQInt<1, 0, 0b00, 0b1110, 1, N3RegFrm, IIC_VBINQ, "vacge",
                         "f32", v4i32, v4f32, int_arm_neon_vacge, 0>;
+}
 def  VACGEhd   : N3VDInt<1, 0, 0b01, 0b1110, 1, N3RegFrm, IIC_VBIND, "vacge",
                         "f16", v4i16, v4f16, int_arm_neon_vacge, 0>,
                  Requires<[HasNEON, HasFullFP16]>;
@@ -5191,10 +5219,12 @@ def  VACGEhq   : N3VQInt<1, 0, 0b01, 0b1110, 1, N3RegFrm, IIC_VBINQ, "vacge",
                         "f16", v8i16, v8f16, int_arm_neon_vacge, 0>,
                  Requires<[HasNEON, HasFullFP16]>;
 //   VACGT    : Vector Absolute Compare Greater Than (aka VCAGT)
+let isCandidateForFPInstrumentation = 1 in {
 def  VACGTfd   : N3VDInt<1, 0, 0b10, 0b1110, 1, N3RegFrm, IIC_VBIND, "vacgt",
                         "f32", v2i32, v2f32, int_arm_neon_vacgt, 0>;
 def  VACGTfq   : N3VQInt<1, 0, 0b10, 0b1110, 1, N3RegFrm, IIC_VBINQ, "vacgt",
                         "f32", v4i32, v4f32, int_arm_neon_vacgt, 0>;
+}
 def  VACGThd   : N3VDInt<1, 0, 0b11, 0b1110, 1, N3RegFrm, IIC_VBIND, "vacgt",
                         "f16", v4i16, v4f16, int_arm_neon_vacgt, 0>,
                  Requires<[HasNEON, HasFullFP16]>;
@@ -5630,10 +5660,12 @@ defm VABDs    : N3VInt_QHS<0, 0, 0b0111, 0, N3RegFrm,
 defm VABDu    : N3VInt_QHS<1, 0, 0b0111, 0, N3RegFrm,
                            IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q, IIC_VSUBi4Q,
                            "vabd", "u", int_arm_neon_vabdu, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VABDfd   : N3VDInt<1, 0, 0b10, 0b1101, 0, N3RegFrm, IIC_VBIND,
                         "vabd", "f32", v2f32, v2f32, int_arm_neon_vabds, 1>;
 def  VABDfq   : N3VQInt<1, 0, 0b10, 0b1101, 0, N3RegFrm, IIC_VBINQ,
                         "vabd", "f32", v4f32, v4f32, int_arm_neon_vabds, 1>;
+}
 def  VABDhd   : N3VDInt<1, 0, 0b11, 0b1101, 0, N3RegFrm, IIC_VBIND,
                         "vabd", "f16", v4f16, v4f16, int_arm_neon_vabds, 1>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5691,12 +5723,14 @@ defm VMAXs    : N3VInt_QHS<0, 0, 0b0110, 0, N3RegFrm,
 defm VMAXu    : N3VInt_QHS<1, 0, 0b0110, 0, N3RegFrm,
                            IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q, IIC_VSUBi4Q,
                            "vmax", "u", umax, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMAXfd   : N3VDInt<0, 0, 0b00, 0b1111, 0, N3RegFrm, IIC_VBIND,
                         "vmax", "f32",
                         v2f32, v2f32, fmaximum, 1>;
 def  VMAXfq   : N3VQInt<0, 0, 0b00, 0b1111, 0, N3RegFrm, IIC_VBINQ,
                         "vmax", "f32",
                         v4f32, v4f32, fmaximum, 1>;
+}
 def  VMAXhd   : N3VDInt<0, 0, 0b01, 0b1111, 0, N3RegFrm, IIC_VBIND,
                         "vmax", "f16",
                         v4f16, v4f16, fmaximum, 1>,
@@ -5708,6 +5742,7 @@ def  VMAXhq   : N3VQInt<0, 0, 0b01, 0b1111, 0, N3RegFrm, IIC_VBINQ,
 
 // VMAXNM
 let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" in {
+let isCandidateForFPInstrumentation = 1 in {
   def NEON_VMAXNMNDf  : N3VDIntnp<0b00110, 0b00, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f32",
                                   v2f32, v2f32, fmaxnum, 1>,
@@ -5716,6 +5751,7 @@ let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" i
                                   N3RegFrm, NoItinerary, "vmaxnm", "f32",
                                   v4f32, v4f32, fmaxnum, 1>,
                                   Requires<[HasV8, HasNEON]>;
+}
   def NEON_VMAXNMNDh  : N3VDIntnp<0b00110, 0b01, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vmaxnm", "f16",
                                   v4f16, v4f16, fmaxnum, 1>,
@@ -5733,12 +5769,14 @@ defm VMINs    : N3VInt_QHS<0, 0, 0b0110, 1, N3RegFrm,
 defm VMINu    : N3VInt_QHS<1, 0, 0b0110, 1, N3RegFrm,
                            IIC_VSUBi4D, IIC_VSUBi4D, IIC_VSUBi4Q, IIC_VSUBi4Q,
                            "vmin", "u", umin, 1>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VMINfd   : N3VDInt<0, 0, 0b10, 0b1111, 0, N3RegFrm, IIC_VBIND,
                         "vmin", "f32",
                         v2f32, v2f32, fminimum, 1>;
 def  VMINfq   : N3VQInt<0, 0, 0b10, 0b1111, 0, N3RegFrm, IIC_VBINQ,
                         "vmin", "f32",
                         v4f32, v4f32, fminimum, 1>;
+}
 def  VMINhd   : N3VDInt<0, 0, 0b11, 0b1111, 0, N3RegFrm, IIC_VBIND,
                         "vmin", "f16",
                         v4f16, v4f16, fminimum, 1>,
@@ -5750,6 +5788,7 @@ def  VMINhq   : N3VQInt<0, 0, 0b11, 0b1111, 0, N3RegFrm, IIC_VBINQ,
 
 // VMINNM
 let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" in {
+let isCandidateForFPInstrumentation = 1 in {
   def NEON_VMINNMNDf  : N3VDIntnp<0b00110, 0b10, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f32",
                                   v2f32, v2f32, fminnum, 1>,
@@ -5758,6 +5797,7 @@ let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" i
                                   N3RegFrm, NoItinerary, "vminnm", "f32",
                                   v4f32, v4f32, fminnum, 1>,
                                   Requires<[HasV8, HasNEON]>;
+}
   def NEON_VMINNMNDh  : N3VDIntnp<0b00110, 0b11, 0b1111, 0, 1,
                                   N3RegFrm, NoItinerary, "vminnm", "f16",
                                   v4f16, v4f16, fminnum, 1>,
@@ -5780,9 +5820,11 @@ def  VPADDi16 : N3VDInt<0, 0, 0b01, 0b1011, 1, N3RegFrm, IIC_VSHLiD,
 def  VPADDi32 : N3VDInt<0, 0, 0b10, 0b1011, 1, N3RegFrm, IIC_VSHLiD,
                         "vpadd", "i32",
                         v2i32, v2i32, int_arm_neon_vpadd, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VPADDf   : N3VDInt<1, 0, 0b00, 0b1101, 0, N3RegFrm,
                         IIC_VPBIND, "vpadd", "f32",
                         v2f32, v2f32, int_arm_neon_vpadd, 0>;
+}
 def  VPADDh   : N3VDInt<1, 0, 0b01, 0b1101, 0, N3RegFrm,
                         IIC_VPBIND, "vpadd", "f16",
                         v4f16, v4f16, int_arm_neon_vpadd, 0>,
@@ -5813,8 +5855,10 @@ def  VPMAXu16 : N3VDInt<1, 0, 0b01, 0b1010, 0, N3RegFrm, IIC_VSUBi4D, "vpmax",
                         "u16", v4i16, v4i16, int_arm_neon_vpmaxu, 0>;
 def  VPMAXu32 : N3VDInt<1, 0, 0b10, 0b1010, 0, N3RegFrm, IIC_VSUBi4D, "vpmax",
                         "u32", v2i32, v2i32, int_arm_neon_vpmaxu, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VPMAXf   : N3VDInt<1, 0, 0b00, 0b1111, 0, N3RegFrm, IIC_VPBIND, "vpmax",
                         "f32", v2f32, v2f32, int_arm_neon_vpmaxs, 0>;
+}
 def  VPMAXh   : N3VDInt<1, 0, 0b01, 0b1111, 0, N3RegFrm, IIC_VPBIND, "vpmax",
                         "f16", v4f16, v4f16, int_arm_neon_vpmaxs, 0>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5832,8 +5876,10 @@ def  VPMINu16 : N3VDInt<1, 0, 0b01, 0b1010, 1, N3RegFrm, IIC_VSUBi4D, "vpmin",
                         "u16", v4i16, v4i16, int_arm_neon_vpminu, 0>;
 def  VPMINu32 : N3VDInt<1, 0, 0b10, 0b1010, 1, N3RegFrm, IIC_VSUBi4D, "vpmin",
                         "u32", v2i32, v2i32, int_arm_neon_vpminu, 0>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VPMINf   : N3VDInt<1, 0, 0b10, 0b1111, 0, N3RegFrm, IIC_VPBIND, "vpmin",
                         "f32", v2f32, v2f32, int_arm_neon_vpmins, 0>;
+}
 def  VPMINh   : N3VDInt<1, 0, 0b11, 0b1111, 0, N3RegFrm, IIC_VPBIND, "vpmin",
                         "f16", v4f16, v4f16, int_arm_neon_vpmins, 0>,
                 Requires<[HasNEON, HasFullFP16]>;
@@ -5847,12 +5893,14 @@ def  VRECPEd  : N2VDInt<0b11, 0b11, 0b10, 0b11, 0b01000, 0,
 def  VRECPEq  : N2VQInt<0b11, 0b11, 0b10, 0b11, 0b01000, 0,
                         IIC_VUNAQ, "vrecpe", "u32",
                         v4i32, v4i32, int_arm_neon_vrecpe>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VRECPEfd : N2VDInt<0b11, 0b11, 0b10, 0b11, 0b01010, 0,
                         IIC_VUNAD, "vrecpe", "f32",
                         v2f32, v2f32, int_arm_neon_vrecpe>;
 def  VRECPEfq : N2VQInt<0b11, 0b11, 0b10, 0b11, 0b01010, 0,
                         IIC_VUNAQ, "vrecpe", "f32",
                         v4f32, v4f32, int_arm_neon_vrecpe>;
+}
 def  VRECPEhd : N2VDInt<0b11, 0b11, 0b01, 0b11, 0b01010, 0,
                         IIC_VUNAD, "vrecpe", "f16",
                         v4f16, v4f16, int_arm_neon_vrecpe>,
@@ -5863,12 +5911,14 @@ def  VRECPEhq : N2VQInt<0b11, 0b11, 0b01, 0b11, 0b01010, 0,
                 Requires<[HasNEON, HasFullFP16]>;
 
 //   VRECPS   : Vector Reciprocal Step
+let isCandidateForFPInstrumentation = 1 in {
 def  VRECPSfd : N3VDInt<0, 0, 0b00, 0b1111, 1, N3RegFrm,
                         IIC_VRECSD, "vrecps", "f32",
                         v2f32, v2f32, int_arm_neon_vrecps, 1>;
 def  VRECPSfq : N3VQInt<0, 0, 0b00, 0b1111, 1, N3RegFrm,
                         IIC_VRECSQ, "vrecps", "f32",
                         v4f32, v4f32, int_arm_neon_vrecps, 1>;
+}
 def  VRECPShd : N3VDInt<0, 0, 0b01, 0b1111, 1, N3RegFrm,
                         IIC_VRECSD, "vrecps", "f16",
                         v4f16, v4f16, int_arm_neon_vrecps, 1>,
@@ -5885,12 +5935,14 @@ def  VRSQRTEd  : N2VDInt<0b11, 0b11, 0b10, 0b11, 0b01001, 0,
 def  VRSQRTEq  : N2VQInt<0b11, 0b11, 0b10, 0b11, 0b01001, 0,
                          IIC_VUNAQ, "vrsqrte", "u32",
                          v4i32, v4i32, int_arm_neon_vrsqrte>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VRSQRTEfd : N2VDInt<0b11, 0b11, 0b10, 0b11, 0b01011, 0,
                          IIC_VUNAD, "vrsqrte", "f32",
                          v2f32, v2f32, int_arm_neon_vrsqrte>;
 def  VRSQRTEfq : N2VQInt<0b11, 0b11, 0b10, 0b11, 0b01011, 0,
                          IIC_VUNAQ, "vrsqrte", "f32",
                          v4f32, v4f32, int_arm_neon_vrsqrte>;
+}
 def  VRSQRTEhd : N2VDInt<0b11, 0b11, 0b01, 0b11, 0b01011, 0,
                          IIC_VUNAD, "vrsqrte", "f16",
                          v4f16, v4f16, int_arm_neon_vrsqrte>,
@@ -5901,12 +5953,14 @@ def  VRSQRTEhq : N2VQInt<0b11, 0b11, 0b01, 0b11, 0b01011, 0,
                 Requires<[HasNEON, HasFullFP16]>;
 
 //   VRSQRTS  : Vector Reciprocal Square Root Step
+let isCandidateForFPInstrumentation = 1 in {
 def VRSQRTSfd : N3VDInt<0, 0, 0b10, 0b1111, 1, N3RegFrm,
                         IIC_VRECSD, "vrsqrts", "f32",
                         v2f32, v2f32, int_arm_neon_vrsqrts, 1>;
 def VRSQRTSfq : N3VQInt<0, 0, 0b10, 0b1111, 1, N3RegFrm,
                         IIC_VRECSQ, "vrsqrts", "f32",
                         v4f32, v4f32, int_arm_neon_vrsqrts, 1>;
+}
 def VRSQRTShd : N3VDInt<0, 0, 0b11, 0b1111, 1, N3RegFrm,
                         IIC_VRECSD, "vrsqrts", "f16",
                         v4f16, v4f16, int_arm_neon_vrsqrts, 1>,
@@ -6106,12 +6160,14 @@ defm VSRI     : N2VShInsR_QHSD<1, 1, 0b0100, 1, "vsri">;
 //   VABS     : Vector Absolute Value
 defm VABS     : N2VInt_QHS<0b11, 0b11, 0b01, 0b00110, 0,
                            IIC_VUNAiD, IIC_VUNAiQ, "vabs", "s", abs>;
+let isCandidateForFPInstrumentation = 1 in {
 def  VABSfd   : N2VD<0b11, 0b11, 0b10, 0b01, 0b01110, 0,
                      "vabs", "f32",
                      v2f32, v2f32, fabs>;
 def  VABSfq   : N2VQ<0b11, 0b11, 0b10, 0b01, 0b01110, 0,
                      "vabs", "f32",
                       v4f32, v4f32, fabs>;
+}
 def  VABShd   : N2VD<0b11, 0b11, 0b01, 0b01, 0b01110, 0,
                      "vabs", "f16",
                      v4f16, v4f16, fabs>,
@@ -6151,6 +6207,7 @@ def  VNEGs16q : VNEGQ<0b01, "vneg", "s16", v8i16>;
 def  VNEGs32q : VNEGQ<0b10, "vneg", "s32", v4i32>;
 
 //   VNEG     : Vector Negate (floating-point)
+let isCandidateForFPInstrumentation = 1 in {
 def  VNEGfd   : N2V<0b11, 0b11, 0b10, 0b01, 0b01111, 0, 0,
                     (outs DPR:$Vd), (ins DPR:$Vm), IIC_VUNAD,
                     "vneg", "f32", "$Vd, $Vm", "",
@@ -6159,6 +6216,7 @@ def  VNEGf32q : N2V<0b11, 0b11, 0b10, 0b01, 0b01111, 1, 0,
                     (outs QPR:$Vd), (ins QPR:$Vm), IIC_VUNAQ,
                     "vneg", "f32", "$Vd, $Vm", "",
                     [(set QPR:$Vd, (v4f32 (fneg QPR:$Vm)))]>;
+}
 def  VNEGhd   : N2V<0b11, 0b11, 0b01, 0b01, 0b01111, 0, 0,
                     (outs DPR:$Vd), (ins DPR:$Vm), IIC_VUNAD,
                     "vneg", "f16", "$Vd, $Vm", "",
@@ -6780,6 +6838,7 @@ def : Pat<(v2i64 (anyext (v2i32 DPR:$Vm))), (VMOVLuv2i64 DPR:$Vm)>;
 // Vector Conversions.
 
 //   VCVT     : Vector Convert Between Floating-Point and Integers
+let isCandidateForFPInstrumentation = 1 in {
 def  VCVTf2sd : N2VD<0b11, 0b11, 0b10, 0b11, 0b01110, 0, "vcvt", "s32.f32",
                      v2i32, v2f32, fp_to_sint>;
 def  VCVTf2ud : N2VD<0b11, 0b11, 0b10, 0b11, 0b01111, 0, "vcvt", "u32.f32",
@@ -6797,6 +6856,7 @@ def  VCVTs2fq : N2VQ<0b11, 0b11, 0b10, 0b11, 0b01100, 0, "vcvt", "f32.s32",
                      v4f32, v4i32, sint_to_fp>;
 def  VCVTu2fq : N2VQ<0b11, 0b11, 0b10, 0b11, 0b01101, 0, "vcvt", "f32.u32",
                      v4f32, v4i32, uint_to_fp>;
+}
 
 def  VCVTh2sd : N2VD<0b11, 0b11, 0b01, 0b11, 0b01110, 0, "vcvt", "s16.f16",
                      v4i16, v4f16, fp_to_sint>,
@@ -6828,6 +6888,7 @@ def  VCVTu2hq : N2VQ<0b11, 0b11, 0b01, 0b11, 0b01101, 0, "vcvt", "f16.u16",
 multiclass VCVT_FPI<string op, bits<3> op10_8, SDPatternOperator IntS,
                     SDPatternOperator IntU> {
   let PostEncoderMethod = "NEONThumb2V8PostEncoder", DecoderNamespace = "v8NEON" in {
+let isCandidateForFPInstrumentation = 1 in {
     def SDf : N2VDIntnp<0b10, 0b11, op10_8, 0, NoItinerary, !strconcat("vcvt", op),
                        "s32.f32", v2i32, v2f32, IntS>, Requires<[HasV8, HasNEON]>;
     def SQf : N2VQIntnp<0b10, 0b11, op10_8, 0, NoItinerary, !strconcat("vcvt", op),
@@ -6836,6 +6897,7 @@ multiclass VCVT_FPI<string op, bits<3> op10_8, SDPatternOperator IntS,
                        "u32.f32", v2i32, v2f32, IntU>, Requires<[HasV8, HasNEON]>;
     def UQf : N2VQIntnp<0b10, 0b11, op10_8, 1, NoItinerary, !strconcat("vcvt", op),
                        "u32.f32", v4i32, v4f32, IntU>, Requires<[HasV8, HasNEON]>;
+}
     def SDh : N2VDIntnp<0b01, 0b11, op10_8, 0, NoItinerary, !strconcat("vcvt", op),
                        "s16.f16", v4i16, v4f16, IntS>,
               Requires<[HasV8, HasNEON, HasFullFP16]>;
@@ -6858,6 +6920,7 @@ defm VCVTMN : VCVT_FPI<"m", 0b011, int_arm_neon_vcvtms, int_arm_neon_vcvtmu>;
 
 //   VCVT     : Vector Convert Between Floating-Point and Fixed-Point.
 let DecoderMethod = "DecodeVCVTD" in {
+let isCandidateForFPInstrumentation = 1 in {
 def VCVTf2xsd : N2VCvtD<0, 1, 0b1111, 0, 1, "vcvt", "s32.f32",
                         v2i32, v2f32, int_arm_neon_vcvtfp2fxs>;
 def VCVTf2xud : N2VCvtD<1, 1, 0b1111, 0, 1, "vcvt", "u32.f32",
@@ -6866,6 +6929,7 @@ def VCVTxs2fd : N2VCvtD<0, 1, 0b1110, 0, 1, "vcvt", "f32.s32",
                         v2f32, v2i32, int_arm_neon_vcvtfxs2fp>;
 def VCVTxu2fd : N2VCvtD<1, 1, 0b1110, 0, 1, "vcvt", "f32.u32",
                         v2f32, v2i32, int_arm_neon_vcvtfxu2fp>;
+}
 let Predicates = [HasNEON, HasFullFP16] in {
 def VCVTh2xsd : N2VCvtD<0, 1, 0b1101, 0, 1, "vcvt", "s16.f16",
                         v4i16, v4f16, int_arm_neon_vcvtfp2fxs>;
@@ -6879,6 +6943,7 @@ def VCVTxu2hd : N2VCvtD<1, 1, 0b1100, 0, 1, "vcvt", "f16.u16",
 }
 
 let DecoderMethod = "DecodeVCVTQ" in {
+let isCandidateForFPInstrumentation = 1 in {
 def VCVTf2xsq : N2VCvtQ<0, 1, 0b1111, 0, 1, "vcvt", "s32.f32",
                         v4i32, v4f32, int_arm_neon_vcvtfp2fxs>;
 def VCVTf2xuq : N2VCvtQ<1, 1, 0b1111, 0, 1, "vcvt", "u32.f32",
@@ -6887,6 +6952,7 @@ def VCVTxs2fq : N2VCvtQ<0, 1, 0b1110, 0, 1, "vcvt", "f32.s32",
                         v4f32, v4i32, int_arm_neon_vcvtfxs2fp>;
 def VCVTxu2fq : N2VCvtQ<1, 1, 0b1110, 0, 1, "vcvt", "f32.u32",
                         v4f32, v4i32, int_arm_neon_vcvtfxu2fp>;
+}
 let Predicates = [HasNEON, HasFullFP16] in {
 def VCVTh2xsq : N2VCvtQ<0, 1, 0b1101, 0, 1, "vcvt", "s16.f16",
                         v8i16, v8f16, int_arm_neon_vcvtfp2fxs>;
@@ -7278,11 +7344,13 @@ multiclass VRINT_FPI<string op, bits<3> op9_7, SDPatternOperator Int> {
                       !strconcat("vrint", op), "f32",
                       v2f32, v2f32, Int>, Requires<[HasV8, HasNEON]> {
       let Inst{9-7} = op9_7;
+      let isCandidateForFPInstrumentation = 1;
     }
     def Qf : N2VQIntnp<0b10, 0b10, 0b100, 0, NoItinerary,
                       !strconcat("vrint", op), "f32",
                       v4f32, v4f32, Int>, Requires<[HasV8, HasNEON]> {
       let Inst{9-7} = op9_7;
+      let isCandidateForFPInstrumentation = 1;
     }
     def Dh : N2VDIntnp<0b01, 0b10, 0b100, 0, NoItinerary,
                       !strconcat("vrint", op), "f16",

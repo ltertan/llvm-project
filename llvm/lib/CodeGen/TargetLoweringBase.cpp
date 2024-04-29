@@ -735,6 +735,7 @@ TargetLoweringBase::TargetLoweringBase(const TargetMachine &tm) : TM(tm) {
   PredictableSelectIsExpensive = false;
   EnableExtLdPromotion = false;
   StackPointerRegisterToSaveRestore = 0;
+  LinkRegister = 0;
   BooleanContents = UndefinedBooleanContent;
   BooleanFloatContents = UndefinedBooleanContent;
   BooleanVectorContents = UndefinedBooleanContent;

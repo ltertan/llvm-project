@@ -38,6 +38,8 @@ using namespace llvm;
 extern cl::opt<std::string> EnableFPInstrumentation;
 extern cl::opt<unsigned> FPInstrumentationMask;
 extern cl::opt<bool> FPInstrumentationOpt;
+extern cl::opt<std::string> FPInstrumentationCheck;
+extern cl::opt<std::string> FPInstrumentationInitialize;
 
 MCOperand ARMAsmPrinter::GetSymbolRef(const MachineOperand &MO,
                                       const MCSymbol *Symbol) {
@@ -453,4 +455,42 @@ void ARMAsmPrinter::LowerFP_INSTRUMENT_OP(const MachineInstr &MI)
         .addReg(0)
         .addReg(ARM::R12));
   }
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(const MachineInstr &MI) {
+  MCSymbol *Label = OutContext.getOrCreateSymbol(FPInstrumentationInitialize);
+  const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::BL)
+    .addExpr(SymbolExpr));
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_CALL_OP(const MachineInstr &MI) {
+  auto &NeedLRSaveRestore = MI.getOperand(0);
+  MCSymbol *Label = OutContext.getOrCreateSymbol(
+                      NeedLRSaveRestore.getImm() == 1 ?
+                      FPInstrumentationCheck + "4" :
+                      FPInstrumentationCheck);
+  const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::BL)
+    .addExpr(SymbolExpr));
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_SAVE_LR(const MachineInstr &MI) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::STMDB_UPD)
+    // Add predicate operands.
+    .addReg(ARM::SP)
+    .addReg(ARM::SP)
+    .addImm(ARMCC::AL)
+    .addReg(0)
+    .addReg(ARM::LR));
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_RESTORE_LR(const MachineInstr &MI) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::LDMIA_UPD)
+    // Add predicate operands.
+    .addReg(ARM::SP)
+    .addReg(ARM::SP)
+    .addImm(ARMCC::AL)
+    .addReg(0)
+    .addReg(ARM::LR));
 }

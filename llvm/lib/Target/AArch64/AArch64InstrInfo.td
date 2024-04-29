@@ -4392,6 +4392,7 @@ defm FCVT : FPConversion<"fcvt">;
 // Floating point single operand instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FABS   : SingleOperandFPDataNoException<0b0001, "fabs", fabs>;
 defm FMOV   : SingleOperandFPDataNoException<0b0000, "fmov">;
 defm FNEG   : SingleOperandFPDataNoException<0b0010, "fneg", fneg>;
@@ -4400,12 +4401,15 @@ defm FRINTI : SingleOperandFPData<0b1111, "frinti", any_fnearbyint>;
 defm FRINTM : SingleOperandFPData<0b1010, "frintm", any_ffloor>;
 defm FRINTN : SingleOperandFPData<0b1000, "frintn", any_froundeven>;
 defm FRINTP : SingleOperandFPData<0b1001, "frintp", any_fceil>;
+}
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FRINTX : SingleOperandFPData<0b1110, "frintx", any_frint>;
 defm FRINTZ : SingleOperandFPData<0b1011, "frintz", any_ftrunc>;
 
 let SchedRW = [WriteFDiv] in {
 defm FSQRT  : SingleOperandFPData<0b0011, "fsqrt", any_fsqrt>;
+}
 }
 
 let Predicates = [HasFRInt3264] in {
@@ -4446,19 +4450,17 @@ def : Pat<(i64 (any_llrint f64:$Rn)),
 
 let isCandidateForFPInstrumentation = 1 in {
 defm FADD   : TwoOperandFPData<0b0010, "fadd", any_fadd>;
-}
-let SchedRW = [WriteFDiv], isCandidateForFPInstrumentation = 1 in  {
+let SchedRW = [WriteFDiv] in {
 defm FDIV   : TwoOperandFPData<0b0001, "fdiv", any_fdiv>;
 }
 defm FMAXNM : TwoOperandFPData<0b0110, "fmaxnm", any_fmaxnum>;
 defm FMAX   : TwoOperandFPData<0b0100, "fmax", any_fmaximum>;
 defm FMINNM : TwoOperandFPData<0b0111, "fminnm", any_fminnum>;
 defm FMIN   : TwoOperandFPData<0b0101, "fmin", any_fminimum>;
-let SchedRW = [WriteFMul], isCandidateForFPInstrumentation = 1 in {
+let SchedRW = [WriteFMul] in {
 defm FMUL   : TwoOperandFPData<0b0000, "fmul", any_fmul>;
 defm FNMUL  : TwoOperandFPDataNeg<0b1000, "fnmul", any_fmul>;
 }
-let isCandidateForFPInstrumentation = 1 in {
 defm FSUB   : TwoOperandFPData<0b0011, "fsub", any_fsub>;
 }
 
@@ -4511,6 +4513,7 @@ def : Pat<(v1f64 (fminnum (v1f64 FPR64:$Rn), (v1f64 FPR64:$Rm))),
 // Floating point three operand instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FMADD  : ThreeOperandFPData<0, 0, "fmadd", any_fma>;
 defm FMSUB  : ThreeOperandFPData<0, 1, "fmsub",
      TriOpFrag<(any_fma node:$LHS, (fneg node:$MHS), node:$RHS)> >;
@@ -4518,6 +4521,7 @@ defm FNMADD : ThreeOperandFPData<1, 0, "fnmadd",
      TriOpFrag<(fneg (any_fma node:$LHS, node:$MHS, node:$RHS))> >;
 defm FNMSUB : ThreeOperandFPData<1, 1, "fnmsub",
      TriOpFrag<(any_fma node:$LHS, node:$MHS, (fneg node:$RHS))> >;
+}
 
 // The following def pats catch the case where the LHS of an FMA is negated.
 // The TriOpFrag above catches the case where the middle operand is negated.
@@ -4562,14 +4566,18 @@ defm FCMP  : FPComparison<0, "fcmp", AArch64any_fcmp>;
 // Floating point conditional comparison instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FCCMPE : FPCondComparison<1, "fccmpe">;
 defm FCCMP  : FPCondComparison<0, "fccmp", AArch64fccmp>;
+}
 
 //===----------------------------------------------------------------------===//
 // Floating point conditional select instruction.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FCSEL : FPCondSelect<"fcsel">;
+}
 
 let Predicates = [HasFullFP16] in
 def : Pat<(bf16 (AArch64csel (bf16 FPR16:$Rn), (bf16 FPR16:$Rm), (i32 imm:$cond), NZCV)),
@@ -4749,8 +4757,10 @@ def : Pat<(concat_vectors V64:$Rd, (v2f32 (any_fpround (v2f64 V128:$Rn)))),
           (FCVTNv4i32 (INSERT_SUBREG (IMPLICIT_DEF), V64:$Rd, dsub), V128:$Rn)>;
 def : Pat<(concat_vectors V64:$Rd, (v4f16 (any_fpround (v4f32 V128:$Rn)))),
           (FCVTNv8i16 (INSERT_SUBREG (IMPLICIT_DEF), V64:$Rd, dsub), V128:$Rn)>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTPS : SIMDTwoVectorFPToInt<0,1,0b11010, "fcvtps",int_aarch64_neon_fcvtps>;
 defm FCVTPU : SIMDTwoVectorFPToInt<1,1,0b11010, "fcvtpu",int_aarch64_neon_fcvtpu>;
+}
 defm FCVTXN : SIMDFPInexactCvtTwoVector<1, 0, 0b10110, "fcvtxn",
                                         int_aarch64_neon_fcvtxn>;
 let isCandidateForFPInstrumentation = 1 in {
@@ -4788,6 +4798,7 @@ def : Pat<(v2i32 (int_aarch64_neon_fcvtzu v2f32:$Rn)), (FCVTZUv2f32 $Rn)>;
 def : Pat<(v4i32 (int_aarch64_neon_fcvtzu v4f32:$Rn)), (FCVTZUv4f32 $Rn)>;
 def : Pat<(v2i64 (int_aarch64_neon_fcvtzu v2f64:$Rn)), (FCVTZUv2f64 $Rn)>;
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FNEG   : SIMDTwoVectorFPNoException<1, 1, 0b01111, "fneg", fneg>;
 defm FRECPE : SIMDTwoVectorFP<0, 1, 0b11101, "frecpe", int_aarch64_neon_frecpe>;
 defm FRINTA : SIMDTwoVectorFP<1, 0, 0b11000, "frinta", any_fround>;
@@ -4807,6 +4818,7 @@ let Predicates = [HasFRInt3264] in {
 
 defm FRSQRTE: SIMDTwoVectorFP<1, 1, 0b11101, "frsqrte", int_aarch64_neon_frsqrte>;
 defm FSQRT  : SIMDTwoVectorFP<1, 1, 0b11111, "fsqrt", any_fsqrt>;
+}
 defm NEG    : SIMDTwoVectorBHSD<1, 0b01011, "neg",
                                UnOpFrag<(sub immAllZerosV, node:$LHS)> >;
 defm NOT    : SIMDTwoVectorB<1, 0b00, 0b00101, "not", vnot>;
@@ -5383,6 +5395,7 @@ defm FCMGE  : SIMDFPCmpTwoScalar<1, 1, 0b01100, "fcmge", AArch64fcmgez>;
 defm FCMGT  : SIMDFPCmpTwoScalar<0, 1, 0b01100, "fcmgt", AArch64fcmgtz>;
 defm FCMLE  : SIMDFPCmpTwoScalar<1, 1, 0b01101, "fcmle", AArch64fcmlez>;
 defm FCMLT  : SIMDFPCmpTwoScalar<0, 1, 0b01110, "fcmlt", AArch64fcmltz>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTAS : SIMDFPTwoScalar<   0, 0, 0b11100, "fcvtas">;
 defm FCVTAU : SIMDFPTwoScalar<   1, 0, 0b11100, "fcvtau">;
 defm FCVTMS : SIMDFPTwoScalar<   0, 0, 0b11011, "fcvtms">;
@@ -5397,16 +5410,21 @@ defm FCVTZU : SIMDFPTwoScalar<   1, 1, 0b11011, "fcvtzu">;
 defm FRECPE : SIMDFPTwoScalar<   0, 1, 0b11101, "frecpe", HasNEONorSME>;
 defm FRECPX : SIMDFPTwoScalar<   0, 1, 0b11111, "frecpx", HasNEONorSME>;
 defm FRSQRTE : SIMDFPTwoScalar<  1, 1, 0b11101, "frsqrte", HasNEONorSME>;
+}
 defm NEG    : SIMDTwoScalarD<    1, 0b01011, "neg",
                                  UnOpFrag<(sub immAllZerosV, node:$LHS)> >;
+let isCandidateForFPInstrumentation = 1 in {
 defm SCVTF  : SIMDFPTwoScalarCVT<   0, 0, 0b11101, "scvtf", AArch64sitof>;
+}
 defm SQABS  : SIMDTwoScalarBHSD< 0, 0b00111, "sqabs", int_aarch64_neon_sqabs>;
 defm SQNEG  : SIMDTwoScalarBHSD< 1, 0b00111, "sqneg", int_aarch64_neon_sqneg>;
 defm SQXTN  : SIMDTwoScalarMixedBHS< 0, 0b10100, "sqxtn", int_aarch64_neon_scalar_sqxtn>;
 defm SQXTUN : SIMDTwoScalarMixedBHS< 1, 0b10010, "sqxtun", int_aarch64_neon_scalar_sqxtun>;
 defm SUQADD : SIMDTwoScalarBHSDTied< 0, 0b00011, "suqadd",
                                      int_aarch64_neon_suqadd>;
+let isCandidateForFPInstrumentation = 1 in {
 defm UCVTF  : SIMDFPTwoScalarCVT<   1, 0, 0b11101, "ucvtf", AArch64uitof>;
+}
 defm UQXTN  : SIMDTwoScalarMixedBHS<1, 0b10100, "uqxtn", int_aarch64_neon_scalar_uqxtn>;
 defm USQADD : SIMDTwoScalarBHSDTied< 1, 0b00011, "usqadd",
                                     int_aarch64_neon_usqadd>;
@@ -5897,11 +5915,13 @@ defm DUP : SIMDScalarDUP<"mov">;
 //----------------------------------------------------------------------------
 
 defm ADDP    : SIMDPairwiseScalarD<0, 0b11011, "addp">;
+let isCandidateForFPInstrumentation = 1 in {
 defm FADDP   : SIMDFPPairwiseScalar<0, 0b01101, "faddp">;
 defm FMAXNMP : SIMDFPPairwiseScalar<0, 0b01100, "fmaxnmp">;
 defm FMAXP   : SIMDFPPairwiseScalar<0, 0b01111, "fmaxp">;
 defm FMINNMP : SIMDFPPairwiseScalar<1, 0b01100, "fminnmp">;
 defm FMINP   : SIMDFPPairwiseScalar<1, 0b01111, "fminp">;
+}
 
 // Only the lower half of the result of the inner FADDP is used in the patterns
 // below, so the second operand does not matter. Re-use the first input
@@ -6413,10 +6433,12 @@ defm UMAXV   : SIMDAcrossLanesBHS<1, 0b01010, "umaxv">;
 defm UMINV   : SIMDAcrossLanesBHS<1, 0b11010, "uminv">;
 defm SADDLV  : SIMDAcrossLanesHSD<0, 0b00011, "saddlv">;
 defm UADDLV  : SIMDAcrossLanesHSD<1, 0b00011, "uaddlv">;
+let isCandidateForFPInstrumentation = 1 in {
 defm FMAXNMV : SIMDFPAcrossLanes<0b01100, 0, "fmaxnmv", AArch64fmaxnmv>;
 defm FMAXV   : SIMDFPAcrossLanes<0b01111, 0, "fmaxv", AArch64fmaxv>;
 defm FMINNMV : SIMDFPAcrossLanes<0b01100, 1, "fminnmv", AArch64fminnmv>;
 defm FMINV   : SIMDFPAcrossLanes<0b01111, 1, "fminv", AArch64fminv>;
+}
 
 multiclass SIMDAcrossLaneLongPairIntrinsic<string Opc, SDPatternOperator addlp> {
   // Patterns for addv(addlp(x)) ==> addlv
@@ -6960,8 +6982,10 @@ defm : FMLSIndexedAfterNegPatterns<
 defm : FMLSIndexedAfterNegPatterns<
            TriOpFrag<(any_fma node:$MHS, node:$RHS, node:$LHS)> >;
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FMULX : SIMDFPIndexed<1, 0b1001, "fmulx", int_aarch64_neon_fmulx>;
 defm FMUL  : SIMDFPIndexed<0, 0b1001, "fmul", any_fmul>;
+}
 
 def : Pat<(v2f32 (any_fmul V64:$Rn, (AArch64dup (f32 FPR32:$Rm)))),
           (FMULv2i32_indexed V64:$Rn,
@@ -7019,10 +7043,12 @@ def : Pat<(int_aarch64_neon_sqdmulls_scalar (i32 FPR32:$Rn),
 //----------------------------------------------------------------------------
 // AdvSIMD scalar shift instructions
 //----------------------------------------------------------------------------
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTZS : SIMDFPScalarRShift<0, 0b11111, "fcvtzs">;
 defm FCVTZU : SIMDFPScalarRShift<1, 0b11111, "fcvtzu">;
 defm SCVTF  : SIMDFPScalarRShift<0, 0b11100, "scvtf">;
 defm UCVTF  : SIMDFPScalarRShift<1, 0b11100, "ucvtf">;
+}
 // Codegen patterns for the above. We don't put these directly on the
 // instructions because TableGen's type inference can't handle the truth.
 // Having the same base pattern for fp <--> int totally freaks it out.
@@ -7140,10 +7166,12 @@ defm USRA     : SIMDScalarRShiftDTied<   1, 0b00010, "usra",
 //----------------------------------------------------------------------------
 // AdvSIMD vector shift instructions
 //----------------------------------------------------------------------------
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTZS:SIMDVectorRShiftSD<0, 0b11111, "fcvtzs", int_aarch64_neon_vcvtfp2fxs>;
 defm FCVTZU:SIMDVectorRShiftSD<1, 0b11111, "fcvtzu", int_aarch64_neon_vcvtfp2fxu>;
 defm SCVTF: SIMDVectorRShiftToFP<0, 0b11100, "scvtf",
                                    int_aarch64_neon_vcvtfxs2fp>;
+}
 defm RSHRN   : SIMDVectorRShiftNarrowBHS<0, 0b10001, "rshrn",
                           BinOpFrag<(trunc (AArch64roundingvlshr node:$LHS, node:$RHS))>>;
 defm SHL     : SIMDVectorLShiftBHSD<0, 0b01010, "shl", AArch64vshl>;
@@ -7191,8 +7219,10 @@ defm SSHLL   : SIMDVectorLShiftLongBHSD<0, 0b10100, "sshll",
 defm SSHR    : SIMDVectorRShiftBHSD<0, 0b00000, "sshr", AArch64vashr>;
 defm SSRA    : SIMDVectorRShiftBHSDTied<0, 0b00010, "ssra",
                 TriOpFrag<(add_and_or_is_add node:$LHS, (AArch64vashr node:$MHS, node:$RHS))>>;
+let isCandidateForFPInstrumentation = 1 in {
 defm UCVTF   : SIMDVectorRShiftToFP<1, 0b11100, "ucvtf",
                         int_aarch64_neon_vcvtfxu2fp>;
+}
 defm UQRSHRN : SIMDVectorRShiftNarrowBHS<1, 0b10011, "uqrshrn",
                                          int_aarch64_neon_uqrshrn>;
 defm UQSHL   : SIMDVectorLShiftBHSD<1, 0b01110, "uqshl", AArch64uqshli>;

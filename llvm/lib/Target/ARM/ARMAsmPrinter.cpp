@@ -2288,6 +2288,19 @@ void ARMAsmPrinter::emitInstruction(const MachineInstr *MI) {
   case ARM::FP_INSTRUMENT_FUNCTION_ENTER:
     LowerFP_INSTRUMENT_FUNCTION_ENTER(*MI);
     return;
+  case ARM::FP_INSTRUMENT_SAVE_LR:
+    LowerFP_INSTRUMENT_SAVE_LR(*MI);
+    return;
+  case ARM::FP_INSTRUMENT_RESTORE_LR:
+    LowerFP_INSTRUMENT_RESTORE_LR(*MI);
+    return;
+  case ARM::FP_INSTRUMENT_CALL_OP:
+    LowerFP_INSTRUMENT_CALL_OP(*MI);
+    return;
+  case ARM::FP_INSTRUMENT_CALL_FUNCTION_ENTER:
+    LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(*MI);
+    return;
+
   case ARM::SpeculationBarrierISBDSBEndBB: {
     // Print DSB SYS + ISB
     MCInst TmpInstDSB;

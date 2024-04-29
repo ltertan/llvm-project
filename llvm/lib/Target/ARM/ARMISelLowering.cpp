@@ -1590,6 +1590,8 @@ ARMTargetLowering::ARMTargetLowering(const TargetMachine &TM,
 
   setStackPointerRegisterToSaveRestore(ARM::SP);
 
+  setLinkRegister(ARM::LR);
+
   if (Subtarget->useSoftFloat() || Subtarget->isThumb1Only() ||
       !Subtarget->hasVFP2Base() || Subtarget->hasMinSize())
     setSchedulingPreference(Sched::RegPressure);

@@ -170,12 +170,28 @@ HANDLE_TARGET_OPCODE(LOCAL_ESCAPE)
 /// comparisons into existing memory operations.
 HANDLE_TARGET_OPCODE(FAULTING_OP)
 
-/// Initialize FPSCR at the start of the examined function. (ARM)
+/// Insert instructions that initialize FPSCR/FPCR at the start of the
+/// examined function. (ARM32/ARM64)
 HANDLE_TARGET_OPCODE(FP_INSTRUMENT_FUNCTION_ENTER)
 
-/// Check FPSCR status for each FP instruction. Jump to exception handler if a
-/// floating point exception occurs. (ARM)
+/// Insert instructions that check FPSCR/FPCR after each unsafe floating point
+/// instruction. Jump to the specified exception handler
+/// if an exception occurs. (ARM32/ARM64)
 HANDLE_TARGET_OPCODE(FP_INSTRUMENT_OP)
+
+/// Insert a function call that initializes FPSCR/FPCR after the frame setup of
+/// the examined function. (ARM32/ARM64)
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_CALL_FUNCTION_ENTER)
+
+/// Insert a function call that checks FPSCR/FPCR after each unsafe
+/// floating point instruction. (ARM32/ARM64)
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_CALL_OP)
+
+/// Save LR before the call
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_SAVE_LR)
+
+/// Restore LR after the call
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_RESTORE_LR)
 
 /// Wraps a machine instruction to add patchability constraints.  An
 /// instruction wrapped in PATCHABLE_OP has to either have a minimum

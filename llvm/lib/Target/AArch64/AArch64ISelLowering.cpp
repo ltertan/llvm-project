@@ -1026,6 +1026,8 @@ AArch64TargetLowering::AArch64TargetLowering(const TargetMachine &TM,
 
   setStackPointerRegisterToSaveRestore(AArch64::SP);
 
+  setLinkRegister(AArch64::LR);
+
   setSchedulingPreference(Sched::Hybrid);
 
   EnableExtLdPromotion = true;

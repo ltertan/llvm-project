@@ -67,6 +67,8 @@ using namespace llvm;
 extern cl::opt<std::string> EnableFPInstrumentation;
 extern cl::opt<unsigned> FPInstrumentationMask;
 extern cl::opt<bool> FPInstrumentationOpt;
+extern cl::opt<std::string> FPInstrumentationCheck;
+extern cl::opt<std::string> FPInstrumentationInitialize;
 
 #define DEBUG_TYPE "asm-printer"
 
@@ -116,6 +118,10 @@ public:
   void LowerPATCHABLE_EVENT_CALL(const MachineInstr &MI, bool Typed);
   void LowerFP_INSTRUMENT_OP(const MachineInstr &MI);
   void LowerFP_INSTRUMENT_FUNCTION_ENTER(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_CALL_OP(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_SAVE_LR(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_RESTORE_LR(const MachineInstr &MI);
   void SetupFPInstrumentationRegisterMap(MachineFunction &MF);
 
   typedef std::tuple<unsigned, bool, uint32_t> HwasanMemaccessTuple;
@@ -722,6 +728,41 @@ void AArch64AsmPrinter::LowerFP_INSTRUMENT_OP(const MachineInstr &MI) {
   }
 }
 
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(
+                                                   const MachineInstr &MI) {
+  MCSymbol *Label = OutContext.getOrCreateSymbol(FPInstrumentationInitialize);
+  const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::BL)
+    .addExpr(SymbolExpr));
+}
+
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_CALL_OP(const MachineInstr &MI) {
+  auto &NeedLRSaveRestore = MI.getOperand(0);
+  MCSymbol *Label = OutContext.getOrCreateSymbol(
+                      NeedLRSaveRestore.getImm() == 1 ?
+                      FPInstrumentationCheck + "16" :
+                      FPInstrumentationCheck);
+  const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::BL)
+    .addExpr(SymbolExpr));
+}
+
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_SAVE_LR(const MachineInstr &MI) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXpre)
+    .addReg(AArch64::LR)
+    .addReg(AArch64::LR)
+    .addReg(AArch64::SP)
+    .addImm(-16));
+}
+
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_RESTORE_LR(const MachineInstr &MI) {
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXpost)
+    .addReg(AArch64::LR)
+    .addReg(AArch64::LR)
+    .addReg(AArch64::SP)
+    .addImm(16));
+}
+//
 void AArch64AsmPrinter::SetupFPInstrumentationRegisterMap(MachineFunction &MF) {
   if (EnableFPInstrumentation.empty() ||
       !FPInstrumentationOpt ||
@@ -1885,6 +1926,18 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     return;
   case TargetOpcode::FP_INSTRUMENT_FUNCTION_ENTER:
     LowerFP_INSTRUMENT_FUNCTION_ENTER(*MI);
+    return;
+  case TargetOpcode::FP_INSTRUMENT_SAVE_LR:
+    LowerFP_INSTRUMENT_SAVE_LR(*MI);
+    return;
+  case TargetOpcode::FP_INSTRUMENT_RESTORE_LR:
+    LowerFP_INSTRUMENT_RESTORE_LR(*MI);
+    return;
+  case TargetOpcode::FP_INSTRUMENT_CALL_OP:
+    LowerFP_INSTRUMENT_CALL_OP(*MI);
+    return;
+  case TargetOpcode::FP_INSTRUMENT_CALL_FUNCTION_ENTER:
+    LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(*MI);
     return;
 
   case AArch64::KCFI_CHECK:

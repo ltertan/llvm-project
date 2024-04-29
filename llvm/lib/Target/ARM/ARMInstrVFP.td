@@ -496,12 +496,13 @@ def VMULH  : AHbI<0b11100, 0b10, 0, 0,
                   [(set (f16 HPR:$Sd), (fmul (f16 HPR:$Sn), (f16 HPR:$Sm)))]>,
              Sched<[WriteFPMUL32, ReadFPMUL, ReadFPMUL]>;
 
-let TwoOperandAliasConstraint = "$Dn = $Dd" in
+let TwoOperandAliasConstraint = "$Dn = $Dd", isCandidateForFPInstrumentation = 1 in {
 def VNMULD : ADbI<0b11100, 0b10, 1, 0,
                   (outs DPR:$Dd), (ins DPR:$Dn, DPR:$Dm),
                   IIC_fpMUL64, "vnmul", ".f64\t$Dd, $Dn, $Dm",
                   [(set DPR:$Dd, (fneg (fmul DPR:$Dn, (f64 DPR:$Dm))))]>,
              Sched<[WriteFPMUL64, ReadFPMUL, ReadFPMUL]>;
+}
 
 let TwoOperandAliasConstraint = "$Sn = $Sd" in
 def VNMULS : ASbI<0b11100, 0b10, 1, 0,
@@ -512,6 +513,7 @@ def VNMULS : ASbI<0b11100, 0b10, 1, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 let TwoOperandAliasConstraint = "$Sn = $Sd" in
@@ -545,10 +547,12 @@ multiclass vsel_inst<string op, bits<2> opc, int CC> {
 }
 
 // The CC constants here match ARMCC::CondCodes.
+let isCandidateForFPInstrumentation = 1 in {
 defm VSELGT : vsel_inst<"gt", 0b11, 12>;
 defm VSELGE : vsel_inst<"ge", 0b10, 10>;
 defm VSELEQ : vsel_inst<"eq", 0b00, 0>;
 defm VSELVS : vsel_inst<"vs", 0b01, 6>;
+}
 
 multiclass vmaxmin_inst<string op, bit opc, SDNode SD> {
   let DecoderNamespace = "VFPV8", PostEncoderMethod = "",
@@ -573,8 +577,10 @@ multiclass vmaxmin_inst<string op, bit opc, SDNode SD> {
   }
 }
 
+let isCandidateForFPInstrumentation = 1 in {
 defm VFP_VMAXNM : vmaxmin_inst<"vmaxnm", 0, fmaxnum>;
 defm VFP_VMINNM : vmaxmin_inst<"vminnm", 1, fminnum>;
+}
 
 // Match reassociated forms only if not sign dependent rounding.
 def : Pat<(fmul (fneg DPR:$a), (f64 DPR:$b)),
@@ -616,6 +622,7 @@ def VCMPS  : ASuI<0b11101, 0b11, 0b0100, 0b01, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VCMPH  : AHuI<0b11101, 0b11, 0b0100, 0b01, 0,
@@ -628,10 +635,12 @@ def VCMPH  : AHuI<0b11101, 0b11, 0b0100, 0b01, 0,
 // FP Unary Operations.
 //
 
+let isCandidateForFPInstrumentation = 1 in {
 def VABSD  : ADuI<0b11101, 0b11, 0b0000, 0b11, 0,
                   (outs DPR:$Dd), (ins DPR:$Dm),
                   IIC_fpUNA64, "vabs", ".f64\t$Dd, $Dm", "",
                   [(set DPR:$Dd, (fabs (f64 DPR:$Dm)))]>;
+}
 
 def VABSS  : ASuIn<0b11101, 0b11, 0b0000, 0b11, 0,
                    (outs SPR:$Sd), (ins SPR:$Sm),
@@ -640,6 +649,7 @@ def VABSS  : ASuIn<0b11101, 0b11, 0b0000, 0b11, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VABSH  : AHuI<0b11101, 0b11, 0b0000, 0b11, 0,
@@ -924,6 +934,7 @@ multiclass vcvt_inst<string opc, bits<2> rm,
                     []>,
                     Requires<[HasFPARMv8]> {
       let Inst{17-16} = rm;
+      let isCandidateForFPInstrumentation = 1;
     }
 
     def US : ASuInp<0b11101, 0b11, 0b1100, 0b01, 0,
@@ -932,6 +943,7 @@ multiclass vcvt_inst<string opc, bits<2> rm,
                     []>,
                     Requires<[HasFPARMv8]> {
       let Inst{17-16} = rm;
+      let isCandidateForFPInstrumentation = 1;
     }
 
     def SD : ASuInp<0b11101, 0b11, 0b1100, 0b11, 0,
@@ -947,6 +959,7 @@ multiclass vcvt_inst<string opc, bits<2> rm,
       let Inst{3-0} = Dm{3-0};
       let Inst{5}   = Dm{4};
       let Inst{8} = 1;
+      let isCandidateForFPInstrumentation = 1;
     }
 
     def UD : ASuInp<0b11101, 0b11, 0b1100, 0b01, 0,
@@ -962,6 +975,7 @@ multiclass vcvt_inst<string opc, bits<2> rm,
       let Inst{3-0}  = Dm{3-0};
       let Inst{5}    = Dm{4};
       let Inst{8} = 1;
+      let isCandidateForFPInstrumentation = 1;
     }
   }
 
@@ -1003,10 +1017,12 @@ defm VCVTN : vcvt_inst<"n", 0b01>;
 defm VCVTP : vcvt_inst<"p", 0b10, fceil>;
 defm VCVTM : vcvt_inst<"m", 0b11, ffloor>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VNEGD  : ADuI<0b11101, 0b11, 0b0001, 0b01, 0,
                   (outs DPR:$Dd), (ins DPR:$Dm),
                   IIC_fpUNA64, "vneg", ".f64\t$Dd, $Dm", "",
                   [(set DPR:$Dd, (fneg (f64 DPR:$Dm)))]>;
+}
 
 def VNEGS  : ASuIn<0b11101, 0b11, 0b0001, 0b01, 0,
                    (outs SPR:$Sd), (ins SPR:$Sm),
@@ -1015,6 +1031,7 @@ def VNEGS  : ASuIn<0b11101, 0b11, 0b0001, 0b01, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VNEGH  : AHuI<0b11101, 0b11, 0b0001, 0b01, 0,
@@ -1081,6 +1098,7 @@ multiclass vrint_inst_anpm<string opc, bits<2> rm,
                    [(set (f32 SPR:$Sd), (node (f32 SPR:$Sm)))]>,
                    Requires<[HasFPARMv8]> {
       let Inst{17-16} = rm;
+      let isCandidateForFPInstrumentation = 1;
     }
     def D : ADuInp<0b11101, 0b11, 0b1000, 0b01, 0,
                    (outs DPR:$Dd), (ins DPR:$Dm),
@@ -1088,6 +1106,7 @@ multiclass vrint_inst_anpm<string opc, bits<2> rm,
                    [(set (f64 DPR:$Dd), (node (f64 DPR:$Dm)))]>,
                    Requires<[HasFPARMv8, HasDPVFP]> {
       let Inst{17-16} = rm;
+      let isCandidateForFPInstrumentation = 1;
     }
   }
 
@@ -1107,6 +1126,7 @@ defm VRINTN : vrint_inst_anpm<"n", 0b01, int_arm_neon_vrintn>;
 defm VRINTP : vrint_inst_anpm<"p", 0b10, fceil>;
 defm VRINTM : vrint_inst_anpm<"m", 0b11, ffloor>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VSQRTD : ADuI<0b11101, 0b11, 0b0001, 0b11, 0,
                   (outs DPR:$Dd), (ins DPR:$Dm),
                   IIC_fpSQRT64, "vsqrt", ".f64\t$Dd, $Dm", "",
@@ -1118,6 +1138,7 @@ def VSQRTS : ASuI<0b11101, 0b11, 0b0001, 0b11, 0,
                   IIC_fpSQRT32, "vsqrt", ".f32\t$Sd, $Sm", "",
                   [(set SPR:$Sd, (fsqrt SPR:$Sm))]>,
              Sched<[WriteFPSQRT32]>;
+}
 
 def VSQRTH : AHuI<0b11101, 0b11, 0b0001, 0b11, 0,
                   (outs HPR:$Sd), (ins HPR:$Sm),
@@ -1974,6 +1995,7 @@ def VSLTOS : AVConv1XInsS_Encode<0b11101, 0b11, 0b1010, 0b1010, 1,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VULTOS : AVConv1XInsS_Encode<0b11101, 0b11, 0b1011, 0b1010, 1,
@@ -1983,6 +2005,7 @@ def VULTOS : AVConv1XInsS_Encode<0b11101, 0b11, 0b1011, 0b1010, 1,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VSHTOD : AVConv1XInsD_Encode<0b11101, 0b11, 0b1010, 0b1011, 0,
@@ -2041,7 +2064,7 @@ def BF16_VCVTT : BF16_VCVT<"vcvtt", 0b11>;
 //===----------------------------------------------------------------------===//
 // FP Multiply-Accumulate Operations.
 //
-
+let isCandidateForFPInstrumentation = 1 in {
 def VMLAD : ADbI<0b11100, 0b00, 0, 0,
                  (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                  IIC_fpMAC64, "vmla", ".f64\t$Dd, $Dn, $Dm",
@@ -2050,6 +2073,7 @@ def VMLAD : ADbI<0b11100, 0b00, 0, 0,
               RegConstraint<"$Ddin = $Dd">,
               Requires<[HasVFP2,HasDPVFP,UseFPVMLx]>,
               Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VMLAS : ASbIn<0b11100, 0b00, 0, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2062,6 +2086,7 @@ def VMLAS : ASbIn<0b11100, 0b00, 0, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VMLAH : AHbI<0b11100, 0b00, 0, 0,
@@ -2083,6 +2108,7 @@ def : Pat<(fadd_mlx HPR:$dstin, (fmul_su (f16 HPR:$a), HPR:$b)),
           Requires<[HasFullFP16,DontUseNEONForFP, UseFPVMLx]>;
 
 
+let isCandidateForFPInstrumentation = 1 in {
 def VMLSD : ADbI<0b11100, 0b00, 1, 0,
                  (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                  IIC_fpMAC64, "vmls", ".f64\t$Dd, $Dn, $Dm",
@@ -2091,6 +2117,7 @@ def VMLSD : ADbI<0b11100, 0b00, 1, 0,
               RegConstraint<"$Ddin = $Dd">,
               Requires<[HasVFP2,HasDPVFP,UseFPVMLx]>,
               Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VMLSS : ASbIn<0b11100, 0b00, 1, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2103,6 +2130,7 @@ def VMLSS : ASbIn<0b11100, 0b00, 1, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VMLSH : AHbI<0b11100, 0b00, 1, 0,
@@ -2123,6 +2151,7 @@ def : Pat<(fsub_mlx HPR:$dstin, (fmul_su (f16 HPR:$a), HPR:$b)),
           (VMLSH HPR:$dstin, (f16 HPR:$a), HPR:$b)>,
           Requires<[HasFullFP16,DontUseNEONForFP,UseFPVMLx]>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VNMLAD : ADbI<0b11100, 0b01, 1, 0,
                   (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                   IIC_fpMAC64, "vnmla", ".f64\t$Dd, $Dn, $Dm",
@@ -2131,6 +2160,7 @@ def VNMLAD : ADbI<0b11100, 0b01, 1, 0,
                 RegConstraint<"$Ddin = $Dd">,
                 Requires<[HasVFP2,HasDPVFP,UseFPVMLx]>,
                 Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VNMLAS : ASbI<0b11100, 0b01, 1, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2143,6 +2173,7 @@ def VNMLAS : ASbI<0b11100, 0b01, 1, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VNMLAH : AHbI<0b11100, 0b01, 1, 0,
@@ -2175,6 +2206,7 @@ def : Pat<(fsub_mlx (fneg HPR:$dstin), (fmul_su (f16 HPR:$a), HPR:$b)),
           (VNMLAH HPR:$dstin, (f16 HPR:$a), HPR:$b)>,
           Requires<[HasFullFP16,DontUseNEONForFP,UseFPVMLx]>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VNMLSD : ADbI<0b11100, 0b01, 0, 0,
                   (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                   IIC_fpMAC64, "vnmls", ".f64\t$Dd, $Dn, $Dm",
@@ -2183,6 +2215,7 @@ def VNMLSD : ADbI<0b11100, 0b01, 0, 0,
                RegConstraint<"$Ddin = $Dd">,
                Requires<[HasVFP2,HasDPVFP,UseFPVMLx]>,
                Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VNMLSS : ASbI<0b11100, 0b01, 0, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2194,6 +2227,7 @@ def VNMLSS : ASbI<0b11100, 0b01, 0, 0,
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
   let D = VFPNeonA8Domain;
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VNMLSH : AHbI<0b11100, 0b01, 0, 0,
@@ -2216,6 +2250,7 @@ def : Pat<(fsub_mlx (fmul_su (f16 HPR:$a), HPR:$b), HPR:$dstin),
 //===----------------------------------------------------------------------===//
 // Fused FP Multiply-Accumulate Operations.
 //
+let isCandidateForFPInstrumentation = 1 in {
 def VFMAD : ADbI<0b11101, 0b10, 0, 0,
                  (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                  IIC_fpFMAC64, "vfma", ".f64\t$Dd, $Dn, $Dm",
@@ -2224,6 +2259,7 @@ def VFMAD : ADbI<0b11101, 0b10, 0, 0,
               RegConstraint<"$Ddin = $Dd">,
               Requires<[HasVFP4,HasDPVFP,UseFusedMAC]>,
             Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VFMAS : ASbIn<0b11101, 0b10, 0, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2235,6 +2271,7 @@ def VFMAS : ASbIn<0b11101, 0b10, 0, 0,
             Sched<[WriteFPMAC32, ReadFPMAC, ReadFPMUL, ReadFPMUL]> {
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines.
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VFMAH : AHbI<0b11101, 0b10, 0, 0,
@@ -2268,6 +2305,7 @@ def : Pat<(f16 (fma HPR:$Sn, HPR:$Sm, (f16 HPR:$Sdin))),
           (VFMAH (f16 HPR:$Sdin), (f16 HPR:$Sn), (f16 HPR:$Sm))>,
       Requires<[HasFullFP16]>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VFMSD : ADbI<0b11101, 0b10, 1, 0,
                  (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                  IIC_fpFMAC64, "vfms", ".f64\t$Dd, $Dn, $Dm",
@@ -2276,6 +2314,7 @@ def VFMSD : ADbI<0b11101, 0b10, 1, 0,
               RegConstraint<"$Ddin = $Dd">,
               Requires<[HasVFP4,HasDPVFP,UseFusedMAC]>,
               Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VFMSS : ASbIn<0b11101, 0b10, 1, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2287,6 +2326,7 @@ def VFMSS : ASbIn<0b11101, 0b10, 1, 0,
               Sched<[WriteFPMAC32, ReadFPMAC, ReadFPMUL, ReadFPMUL]> {
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines.
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VFMSH : AHbI<0b11101, 0b10, 1, 0,
@@ -2320,6 +2360,7 @@ def : Pat<(f16 (fma (fneg (f16 HPR:$Sn)), (f16 HPR:$Sm), (f16 HPR:$Sdin))),
           (VFMSH (f16 HPR:$Sdin), (f16 HPR:$Sn), (f16 HPR:$Sm))>,
       Requires<[HasFullFP16]>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VFNMAD : ADbI<0b11101, 0b01, 1, 0,
                   (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                   IIC_fpFMAC64, "vfnma", ".f64\t$Dd, $Dn, $Dm",
@@ -2328,6 +2369,7 @@ def VFNMAD : ADbI<0b11101, 0b01, 1, 0,
                 RegConstraint<"$Ddin = $Dd">,
                 Requires<[HasVFP4,HasDPVFP,UseFusedMAC]>,
                 Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VFNMAS : ASbI<0b11101, 0b01, 1, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2339,6 +2381,7 @@ def VFNMAS : ASbI<0b11101, 0b01, 1, 0,
                 Sched<[WriteFPMAC32, ReadFPMAC, ReadFPMUL, ReadFPMUL]> {
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines.
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VFNMAH : AHbI<0b11101, 0b01, 1, 0,
@@ -2379,6 +2422,7 @@ def : Pat<(f16 (fma (fneg (f16 HPR:$Sn)), (f16 HPR:$Sm), (fneg (f16 HPR:$Sdin)))
           (VFNMAH (f16 HPR:$Sdin), (f16 HPR:$Sn), (f16 HPR:$Sm))>,
       Requires<[HasFullFP16]>;
 
+let isCandidateForFPInstrumentation = 1 in {
 def VFNMSD : ADbI<0b11101, 0b01, 0, 0,
                   (outs DPR:$Dd), (ins DPR:$Ddin, DPR:$Dn, DPR:$Dm),
                   IIC_fpFMAC64, "vfnms", ".f64\t$Dd, $Dn, $Dm",
@@ -2387,6 +2431,7 @@ def VFNMSD : ADbI<0b11101, 0b01, 0, 0,
                RegConstraint<"$Ddin = $Dd">,
                Requires<[HasVFP4,HasDPVFP,UseFusedMAC]>,
                Sched<[WriteFPMAC64, ReadFPMAC, ReadFPMUL, ReadFPMUL]>;
+}
 
 def VFNMSS : ASbI<0b11101, 0b01, 0, 0,
                   (outs SPR:$Sd), (ins SPR:$Sdin, SPR:$Sn, SPR:$Sm),
@@ -2397,6 +2442,7 @@ def VFNMSS : ASbI<0b11101, 0b01, 0, 0,
                   Sched<[WriteFPMAC32, ReadFPMAC, ReadFPMUL, ReadFPMUL]> {
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines.
+  let isCandidateForFPInstrumentation = 1;
 }
 
 def VFNMSH : AHbI<0b11101, 0b01, 0, 0,

@@ -1346,6 +1346,38 @@ def FP_INSTRUMENT_OP: StandardPseudoInstruction {
   let mayStore = 1;
   let hasSideEffects = 1;
 }
+def FP_INSTRUMENT_CALL_FUNCTION_ENTER: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins i32imm:$id);
+  let AsmString = "# FP Call Function Enter.";
+  let usesCustomInserter = 1;
+  let isCall = 1;
+  let hasSideEffects = 1;
+}
+def FP_INSTRUMENT_CALL_OP: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins i32imm:$id);
+  let AsmString = "# FP Call Op.";
+  let usesCustomInserter = 1;
+  let isCall = 1;
+  let hasSideEffects = 1;
+}
+def FP_INSTRUMENT_SAVE_LR: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins);
+  let AsmString = "# FP Save LR.";
+  let usesCustomInserter = 1;
+  let mayStore = 1;
+  let hasSideEffects = 1;
+}
+def FP_INSTRUMENT_RESTORE_LR: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins);
+  let AsmString = "# FP Restore LR.";
+  let usesCustomInserter = 1;
+  let mayLoad = 1;
+  let hasSideEffects = 1;
+}
 def PATCHABLE_OP : StandardPseudoInstruction {
   let OutOperandList = (outs);
   let InOperandList = (ins variable_ops);

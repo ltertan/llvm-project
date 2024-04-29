@@ -118,6 +118,10 @@ public:
   void LowerPATCHABLE_TAIL_CALL(const MachineInstr &MI);
   void LowerFP_INSTRUMENT_OP(const MachineInstr &MI);
   void LowerFP_INSTRUMENT_FUNCTION_ENTER(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_CALL_FUNCTION_ENTER(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_CALL_OP(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_SAVE_LR(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_RESTORE_LR(const MachineInstr &MI);
   void SetupFPInstrumentationRegisterMap(MachineFunction &MF);
 
 private:

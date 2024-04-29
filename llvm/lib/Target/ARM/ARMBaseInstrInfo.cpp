@@ -813,6 +813,11 @@ unsigned ARMBaseInstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
     return 20;
   case ARM::FP_INSTRUMENT_OP:
     return 36;
+  case ARM::FP_INSTRUMENT_CALL_FUNCTION_ENTER:
+  case ARM::FP_INSTRUMENT_CALL_OP:
+  case ARM::FP_INSTRUMENT_SAVE_LR:
+  case ARM::FP_INSTRUMENT_RESTORE_LR:
+    return 4;
 
   case TargetOpcode::BUNDLE:
     return getInstBundleLength(MI);

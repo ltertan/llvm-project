@@ -1859,6 +1859,10 @@ public:
     return StackPointerRegisterToSaveRestore;
   }
 
+  unsigned getLinkRegister() const {
+    return LinkRegister;
+  }
+
   /// If a physical register, this returns the register that receives the
   /// exception address on entry to an EH pad.
   virtual Register
@@ -2364,6 +2368,10 @@ protected:
   /// llvm.savestack/llvm.restorestack should save and restore.
   void setStackPointerRegisterToSaveRestore(Register R) {
     StackPointerRegisterToSaveRestore = R;
+  }
+
+  void setLinkRegister(Register R) {
+    LinkRegister = R;
   }
 
   /// Tells the code generator that the target has multiple (allocatable)
@@ -3360,6 +3368,10 @@ private:
   /// If set to a physical register, this specifies the register that
   /// llvm.savestack/llvm.restorestack should save and restore.
   Register StackPointerRegisterToSaveRestore;
+
+  /// The floating point instrumentation pass needs to know whether
+  /// a machine instruction access LR.
+  Register LinkRegister;
 
   /// This indicates the default register class to use for each ValueType the
   /// target supports natively.
