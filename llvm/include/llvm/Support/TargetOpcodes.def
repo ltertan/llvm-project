@@ -170,6 +170,13 @@ HANDLE_TARGET_OPCODE(LOCAL_ESCAPE)
 /// comparisons into existing memory operations.
 HANDLE_TARGET_OPCODE(FAULTING_OP)
 
+/// Initialize FPSCR at the start of the examined function. (ARM)
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_FUNCTION_ENTER)
+
+/// Check FPSCR status for each FP instruction. Jump to exception handler if a
+/// floating point exception occurs. (ARM)
+HANDLE_TARGET_OPCODE(FP_INSTRUMENT_OP)
+
 /// Wraps a machine instruction to add patchability constraints.  An
 /// instruction wrapped in PATCHABLE_OP has to either have a minimum
 /// size or be preceded with a nop of that size.  The first operand is

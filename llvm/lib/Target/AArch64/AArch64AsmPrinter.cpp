@@ -64,6 +64,10 @@
 
 using namespace llvm;
 
+extern cl::opt<std::string> EnableFPInstrumentation;
+extern cl::opt<unsigned> FPInstrumentationMask;
+extern cl::opt<bool> FPInstrumentationOpt;
+
 #define DEBUG_TYPE "asm-printer"
 
 namespace {
@@ -73,6 +77,8 @@ class AArch64AsmPrinter : public AsmPrinter {
   FaultMaps FM;
   const AArch64Subtarget *STI;
   bool ShouldEmitWeakSwiftAsyncExtendedFramePointerFlags = false;
+  std::map<const MachineBasicBlock *,
+        std::tuple<bool, bool, bool, bool> > FPInstrumentationRegisterMap;
 
 public:
   AArch64AsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
@@ -108,6 +114,9 @@ public:
   void LowerPATCHABLE_FUNCTION_EXIT(const MachineInstr &MI);
   void LowerPATCHABLE_TAIL_CALL(const MachineInstr &MI);
   void LowerPATCHABLE_EVENT_CALL(const MachineInstr &MI, bool Typed);
+  void LowerFP_INSTRUMENT_OP(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_FUNCTION_ENTER(const MachineInstr &MI);
+  void SetupFPInstrumentationRegisterMap(MachineFunction &MF);
 
   typedef std::tuple<unsigned, bool, uint32_t> HwasanMemaccessTuple;
   std::map<HwasanMemaccessTuple, MCSymbol *> HwasanMemaccessSymbols;
@@ -136,6 +145,7 @@ public:
     STI = &MF.getSubtarget<AArch64Subtarget>();
 
     SetupMachineFunction(MF);
+    SetupFPInstrumentationRegisterMap(MF);
 
     if (STI->isTargetCOFF()) {
       bool Internal = MF.getFunction().hasInternalLinkage();
@@ -517,6 +527,225 @@ void AArch64AsmPrinter::LowerKCFI_CHECK(const MachineInstr &MI) {
   unsigned ESR = 0x8000 | ((TypeIndex & 31) << 5) | (AddrIndex & 31);
   EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::BRK).addImm(ESR));
   OutStreamer->emitLabel(Pass);
+}
+
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_FUNCTION_ENTER(
+                                                      const MachineInstr &MI) {
+  if (!FPInstrumentationOpt) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::SUBXri)
+      .addReg(AArch64::SP)
+      .addReg(AArch64::SP)
+      .addImm(16)
+      .addImm(0));
+
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXui)
+      .addReg(AArch64::X16)
+      .addReg(AArch64::SP)
+      .addImm(1));
+
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXui)
+      .addReg(AArch64::X17)
+      .addReg(AArch64::SP)
+      .addImm(0));
+  }
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MRS)
+    .addReg(AArch64::X16)
+    .addImm(AArch64SysReg::FPCR));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVNXi)
+    .addReg(AArch64::X17)
+    .addImm(FPInstrumentationMask)
+    .addImm(0));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ANDXrs)
+    .addReg(AArch64::X16)
+    .addReg(AArch64::X16)
+    .addReg(AArch64::X17)
+    .addImm(0));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MSR)
+    .addImm(AArch64SysReg::FPCR)
+    .addReg(AArch64::X16));
+
+  if (!FPInstrumentationOpt) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
+      .addReg(AArch64::X16)
+      .addReg(AArch64::SP)
+      .addImm(1));
+
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
+      .addReg(AArch64::X17)
+      .addReg(AArch64::SP)
+      .addImm(0));
+
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ADDXri)
+      .addReg(AArch64::SP)
+      .addReg(AArch64::SP)
+      .addImm(16)
+      .addImm(0));
+  }
+}
+
+void AArch64AsmPrinter::LowerFP_INSTRUMENT_OP(const MachineInstr &MI) {
+  bool W15AvailableInBlock = false;
+  bool W16AvailableInBlock = false;
+  bool W17AvailableInBlock = false;
+  bool NZCVAvailableInBlock = false;
+
+  if (FPInstrumentationOpt) {
+    auto iter = FPInstrumentationRegisterMap.find(MI.getParent());
+    if (iter != FPInstrumentationRegisterMap.end()) {
+      std::tuple<bool, bool, bool, bool> &AvailableW15W16W17NZCV = iter->second;
+      W15AvailableInBlock = std::get<0>(AvailableW15W16W17NZCV);
+      W16AvailableInBlock = std::get<1>(AvailableW15W16W17NZCV);
+      W17AvailableInBlock = std::get<2>(AvailableW15W16W17NZCV);
+      NZCVAvailableInBlock = std::get<3>(AvailableW15W16W17NZCV);
+    }
+  }
+
+  bool StackSlotsW = !W16AvailableInBlock ||
+                     !W17AvailableInBlock ||
+                     (!NZCVAvailableInBlock && !W15AvailableInBlock);
+
+  // Alloc stack
+  if (StackSlotsW) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::SUBXri)
+      .addReg(AArch64::SP)
+      .addReg(AArch64::SP)
+      .addImm(32)
+      .addImm(0));
+  }
+
+  // save AArch64::X16
+  if (!W16AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXui)
+      .addReg(AArch64::X16)
+      .addReg(AArch64::SP)
+      .addImm(3));
+  }
+
+  // save AArch64::X17
+  if (!W17AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXui)
+      .addReg(AArch64::X17)
+      .addReg(AArch64::SP)
+      .addImm(2));
+  }
+
+  // save AArch64::NZCV
+  if (!NZCVAvailableInBlock) {
+    if (!W15AvailableInBlock) {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MRS)
+        .addReg(AArch64::X16)
+        .addImm(AArch64SysReg::NZCV));
+
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::STRXui)
+        .addReg(AArch64::X16)
+        .addReg(AArch64::SP)
+        .addImm(1));
+    } else {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MRS)
+        .addReg(AArch64::X15)
+        .addImm(AArch64SysReg::NZCV));
+    }
+  }
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MRS)
+    .addReg(AArch64::X16)
+    .addImm(AArch64SysReg::FPCR));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MOVZWi)
+    .addReg(AArch64::W17)
+    .addImm(FPInstrumentationMask)
+    .addImm(0));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ANDSWrs)
+    .addReg(AArch64::WZR)
+    .addReg(AArch64::W16)
+    .addReg(AArch64::W17)
+    .addImm(0));
+
+  // Existing tests can pass with -mllvm --enable-fp-instrumentation=nop
+  // even when there is any floating point exception and no exception handler.
+  if (EnableFPInstrumentation == ".nop") {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::HINT).addImm(0));
+  } else {
+    MCSymbol *Label = OutContext.getOrCreateSymbol(EnableFPInstrumentation);
+    const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::Bcc)
+      .addImm(AArch64CC::NE)
+      .addExpr(SymbolExpr));
+  }
+
+  // restore AArch64::NZCV
+  if (!NZCVAvailableInBlock) {
+    if (!W15AvailableInBlock) {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
+        .addReg(AArch64::X16)
+        .addReg(AArch64::SP)
+        .addImm(1));
+
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MSR)
+        .addImm(AArch64SysReg::NZCV)
+        .addReg(AArch64::X16));
+    } else {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::MSR)
+        .addImm(AArch64SysReg::NZCV)
+        .addReg(AArch64::X15));
+    }
+  }
+
+  // restore AArch64::X16
+  if (!W16AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
+      .addReg(AArch64::X16)
+      .addReg(AArch64::SP)
+      .addImm(3));
+  }
+
+  // restore AArch64::X17
+  if (!W17AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::LDRXui)
+      .addReg(AArch64::X17)
+      .addReg(AArch64::SP)
+      .addImm(2));
+  }
+
+  // Dealloc stack
+  if (StackSlotsW) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(AArch64::ADDXri)
+      .addReg(AArch64::SP)
+      .addReg(AArch64::SP)
+      .addImm(32)
+      .addImm(0));
+  }
+}
+
+void AArch64AsmPrinter::SetupFPInstrumentationRegisterMap(MachineFunction &MF) {
+  if (EnableFPInstrumentation.empty() ||
+      !FPInstrumentationOpt ||
+      !MF.getRegInfo().tracksLiveness()) return;
+
+  for (MachineBasicBlock &MBB : MF) {
+    LiveRegUnits LRU(*STI->getRegisterInfo());
+
+    // Collect defs, uses and regmask clobbers within the basic block
+    std::for_each(MBB.rbegin(), MBB.rend(),
+            [&LRU](MachineInstr &MI) { LRU.accumulate(MI); });
+
+    // Now, add the live outs to the set.
+    LRU.addLiveOuts(MBB);
+
+    // If the register is available in the MBB, but also not a live out of
+    // the block, then we know it's safe to use it without save/restore.
+    FPInstrumentationRegisterMap[&MBB] =
+      std::tuple<bool, bool, bool, bool>(
+        LRU.available(AArch64::W15), // Scratch register
+        LRU.available(AArch64::W16), // Intra-procedural-call scratch register
+        LRU.available(AArch64::W17), // Intra-procedural-call scratch register
+        LRU.available(AArch64::NZCV));
+  }
 }
 
 void AArch64AsmPrinter::LowerHWASAN_CHECK_MEMACCESS(const MachineInstr &MI) {
@@ -1651,6 +1880,12 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     return LowerPATCHABLE_EVENT_CALL(*MI, false);
   case TargetOpcode::PATCHABLE_TYPED_EVENT_CALL:
     return LowerPATCHABLE_EVENT_CALL(*MI, true);
+  case TargetOpcode::FP_INSTRUMENT_OP:
+    LowerFP_INSTRUMENT_OP(*MI);
+    return;
+  case TargetOpcode::FP_INSTRUMENT_FUNCTION_ENTER:
+    LowerFP_INSTRUMENT_FUNCTION_ENTER(*MI);
+    return;
 
   case AArch64::KCFI_CHECK:
     LowerKCFI_CHECK(*MI);

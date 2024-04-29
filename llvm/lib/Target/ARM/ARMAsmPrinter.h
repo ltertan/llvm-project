@@ -65,6 +65,9 @@ class LLVM_LIBRARY_VISIBILITY ARMAsmPrinter : public AsmPrinter {
   /// debug info can link properly.
   SmallPtrSet<const GlobalVariable*,2> EmittedPromotedGlobalLabels;
 
+  std::map<const MachineBasicBlock *,
+           std::tuple<bool, bool, bool> > FPInstrumentationRegisterMap;
+
 public:
   explicit ARMAsmPrinter(TargetMachine &TM,
                          std::unique_ptr<MCStreamer> Streamer);
@@ -113,6 +116,9 @@ public:
   void LowerPATCHABLE_FUNCTION_ENTER(const MachineInstr &MI);
   void LowerPATCHABLE_FUNCTION_EXIT(const MachineInstr &MI);
   void LowerPATCHABLE_TAIL_CALL(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_OP(const MachineInstr &MI);
+  void LowerFP_INSTRUMENT_FUNCTION_ENTER(const MachineInstr &MI);
+  void SetupFPInstrumentationRegisterMap(MachineFunction &MF);
 
 private:
   void EmitSled(const MachineInstr &MI, SledKind Kind);

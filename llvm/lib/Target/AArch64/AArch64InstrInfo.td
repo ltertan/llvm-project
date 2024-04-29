@@ -4206,10 +4206,12 @@ defm FCVTNS : FPToIntegerUnscaled<0b00, 0b000, "fcvtns", int_aarch64_neon_fcvtns
 defm FCVTNU : FPToIntegerUnscaled<0b00, 0b001, "fcvtnu", int_aarch64_neon_fcvtnu>;
 defm FCVTPS : FPToIntegerUnscaled<0b01, 0b000, "fcvtps", int_aarch64_neon_fcvtps>;
 defm FCVTPU : FPToIntegerUnscaled<0b01, 0b001, "fcvtpu", int_aarch64_neon_fcvtpu>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTZS : FPToIntegerUnscaled<0b11, 0b000, "fcvtzs", any_fp_to_sint>;
 defm FCVTZU : FPToIntegerUnscaled<0b11, 0b001, "fcvtzu", any_fp_to_uint>;
 defm FCVTZS : FPToIntegerScaled<0b11, 0b000, "fcvtzs", any_fp_to_sint>;
 defm FCVTZU : FPToIntegerScaled<0b11, 0b001, "fcvtzu", any_fp_to_uint>;
+}
 
 // AArch64's FCVT instructions saturate when out of range.
 multiclass FPToIntegerSatPats<SDNode to_int_sat, string INST> {
@@ -4339,8 +4341,10 @@ def : Pat<(i64 (any_llround f64:$Rn)),
 // Scaled integer to floating point conversion instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm SCVTF : IntegerToFP<0, "scvtf", any_sint_to_fp>;
 defm UCVTF : IntegerToFP<1, "ucvtf", any_uint_to_fp>;
+}
 
 //===----------------------------------------------------------------------===//
 // Unscaled integer to floating point conversion instruction.
@@ -4380,7 +4384,9 @@ let Predicates = [HasFullFP16] in {
 // Floating point conversion instruction.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVT : FPConversion<"fcvt">;
+}
 
 //===----------------------------------------------------------------------===//
 // Floating point single operand instructions.
@@ -4438,19 +4444,23 @@ def : Pat<(i64 (any_llrint f64:$Rn)),
 // Floating point two operand instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FADD   : TwoOperandFPData<0b0010, "fadd", any_fadd>;
-let SchedRW = [WriteFDiv] in {
+}
+let SchedRW = [WriteFDiv], isCandidateForFPInstrumentation = 1 in  {
 defm FDIV   : TwoOperandFPData<0b0001, "fdiv", any_fdiv>;
 }
 defm FMAXNM : TwoOperandFPData<0b0110, "fmaxnm", any_fmaxnum>;
 defm FMAX   : TwoOperandFPData<0b0100, "fmax", any_fmaximum>;
 defm FMINNM : TwoOperandFPData<0b0111, "fminnm", any_fminnum>;
 defm FMIN   : TwoOperandFPData<0b0101, "fmin", any_fminimum>;
-let SchedRW = [WriteFMul] in {
+let SchedRW = [WriteFMul], isCandidateForFPInstrumentation = 1 in {
 defm FMUL   : TwoOperandFPData<0b0000, "fmul", any_fmul>;
 defm FNMUL  : TwoOperandFPDataNeg<0b1000, "fnmul", any_fmul>;
 }
+let isCandidateForFPInstrumentation = 1 in {
 defm FSUB   : TwoOperandFPData<0b0011, "fsub", any_fsub>;
+}
 
 multiclass FMULScalarFromIndexedLane0Patterns<string inst,
                                               string inst_f16_suffix,
@@ -4543,8 +4553,10 @@ def : Pat<(f64 (fma (fneg FPR64:$Rn), FPR64:$Rm, (fneg FPR64:$Ra))),
 // Floating point comparison instructions.
 //===----------------------------------------------------------------------===//
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FCMPE : FPComparison<1, "fcmpe", AArch64strict_fcmpe>;
 defm FCMP  : FPComparison<0, "fcmp", AArch64any_fcmp>;
+}
 
 //===----------------------------------------------------------------------===//
 // Floating point conditional comparison instructions.
@@ -4700,7 +4712,9 @@ defm FCMLE  : SIMDFPCmpTwoVector<1, 1, 0b01101, "fcmle", AArch64fcmlez>;
 defm FCMLT  : SIMDFPCmpTwoVector<0, 1, 0b01110, "fcmlt", AArch64fcmltz>;
 defm FCVTAS : SIMDTwoVectorFPToInt<0,0,0b11100, "fcvtas",int_aarch64_neon_fcvtas>;
 defm FCVTAU : SIMDTwoVectorFPToInt<1,0,0b11100, "fcvtau",int_aarch64_neon_fcvtau>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTL  : SIMDFPWidenTwoVector<0, 0, 0b10111, "fcvtl">;
+}
 def : Pat<(v4f32 (int_aarch64_neon_vcvthf2fp (v4i16 V64:$Rn))),
           (FCVTLv4i16 V64:$Rn)>;
 def : Pat<(v4f32 (int_aarch64_neon_vcvthf2fp (extract_subvector (v8i16 V128:$Rn),
@@ -4715,11 +4729,13 @@ def : Pat<(v4f32 (any_fpextend (v4f16 V64:$Rn))),
 def : Pat<(v4f32 (any_fpextend (v4f16 (extract_high_v8f16 (v8f16 V128:$Rn))))),
           (FCVTLv8i16 V128:$Rn)>;
 
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTMS : SIMDTwoVectorFPToInt<0,0,0b11011, "fcvtms",int_aarch64_neon_fcvtms>;
 defm FCVTMU : SIMDTwoVectorFPToInt<1,0,0b11011, "fcvtmu",int_aarch64_neon_fcvtmu>;
 defm FCVTNS : SIMDTwoVectorFPToInt<0,0,0b11010, "fcvtns",int_aarch64_neon_fcvtns>;
 defm FCVTNU : SIMDTwoVectorFPToInt<1,0,0b11010, "fcvtnu",int_aarch64_neon_fcvtnu>;
 defm FCVTN  : SIMDFPNarrowTwoVector<0, 0, 0b10110, "fcvtn">;
+}
 def : Pat<(v4i16 (int_aarch64_neon_vcvtfp2hf (v4f32 V128:$Rn))),
           (FCVTNv4i16 V128:$Rn)>;
 def : Pat<(concat_vectors V64:$Rd,
@@ -4737,8 +4753,10 @@ defm FCVTPS : SIMDTwoVectorFPToInt<0,1,0b11010, "fcvtps",int_aarch64_neon_fcvtps
 defm FCVTPU : SIMDTwoVectorFPToInt<1,1,0b11010, "fcvtpu",int_aarch64_neon_fcvtpu>;
 defm FCVTXN : SIMDFPInexactCvtTwoVector<1, 0, 0b10110, "fcvtxn",
                                         int_aarch64_neon_fcvtxn>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FCVTZS : SIMDTwoVectorFPToInt<0, 1, 0b11011, "fcvtzs", any_fp_to_sint>;
 defm FCVTZU : SIMDTwoVectorFPToInt<1, 1, 0b11011, "fcvtzu", any_fp_to_uint>;
+}
 
 // AArch64's FCVT instructions saturate when out of range.
 multiclass SIMDTwoVectorFPToIntSatPats<SDNode to_int_sat, string INST> {
@@ -4812,7 +4830,9 @@ defm REV64  : SIMDTwoVectorBHS<0, 0b00000, "rev64", AArch64rev64>;
 defm SADALP : SIMDLongTwoVectorTied<0, 0b00110, "sadalp",
        BinOpFrag<(add node:$LHS, (AArch64saddlp node:$RHS))> >;
 defm SADDLP : SIMDLongTwoVector<0, 0b00010, "saddlp", AArch64saddlp>;
+let isCandidateForFPInstrumentation = 1 in {
 defm SCVTF  : SIMDTwoVectorIntToFP<0, 0, 0b11101, "scvtf", any_sint_to_fp>;
+}
 defm SHLL   : SIMDVectorLShiftLongBySizeBHS;
 defm SQABS  : SIMDTwoVectorBHSD<0, 0b00111, "sqabs", int_aarch64_neon_sqabs>;
 defm SQNEG  : SIMDTwoVectorBHSD<1, 0b00111, "sqneg", int_aarch64_neon_sqneg>;
@@ -4822,7 +4842,9 @@ defm SUQADD : SIMDTwoVectorBHSDTied<0, 0b00011, "suqadd",int_aarch64_neon_suqadd
 defm UADALP : SIMDLongTwoVectorTied<1, 0b00110, "uadalp",
        BinOpFrag<(add node:$LHS, (AArch64uaddlp node:$RHS))> >;
 defm UADDLP : SIMDLongTwoVector<1, 0b00010, "uaddlp", AArch64uaddlp>;
+let isCandidateForFPInstrumentation = 1 in {
 defm UCVTF  : SIMDTwoVectorIntToFP<1, 0, 0b11101, "ucvtf", any_uint_to_fp>;
+}
 defm UQXTN  : SIMDMixedTwoVector<1, 0b10100, "uqxtn", int_aarch64_neon_uqxtn>;
 defm URECPE : SIMDTwoVectorS<0, 1, 0b11100, "urecpe", int_aarch64_neon_urecpe>;
 defm URSQRTE: SIMDTwoVectorS<1, 1, 0b11100, "ursqrte", int_aarch64_neon_ursqrte>;
@@ -4946,11 +4968,13 @@ def : Pat<(fabs (fsub VT:$Rn, VT:$Rm)), (!cast<Instruction>("FABD"#VT) VT:$Rn, V
 defm FACGE   : SIMDThreeSameVectorFPCmp<1,0,0b101,"facge",AArch64facge>;
 defm FACGT   : SIMDThreeSameVectorFPCmp<1,1,0b101,"facgt",AArch64facgt>;
 defm FADDP   : SIMDThreeSameVectorFP<1,0,0b010,"faddp", AArch64faddp>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FADD    : SIMDThreeSameVectorFP<0,0,0b010,"fadd", any_fadd>;
 defm FCMEQ   : SIMDThreeSameVectorFPCmp<0, 0, 0b100, "fcmeq", AArch64fcmeq>;
 defm FCMGE   : SIMDThreeSameVectorFPCmp<1, 0, 0b100, "fcmge", AArch64fcmge>;
 defm FCMGT   : SIMDThreeSameVectorFPCmp<1, 1, 0b100, "fcmgt", AArch64fcmgt>;
 defm FDIV    : SIMDThreeSameVectorFP<1,0,0b111,"fdiv", any_fdiv>;
+}
 defm FMAXNMP : SIMDThreeSameVectorFP<1,0,0b000,"fmaxnmp", int_aarch64_neon_fmaxnmp>;
 defm FMAXNM  : SIMDThreeSameVectorFP<0,0,0b000,"fmaxnm", any_fmaxnum>;
 defm FMAXP   : SIMDThreeSameVectorFP<1,0,0b110,"fmaxp", int_aarch64_neon_fmaxp>;
@@ -4968,10 +4992,14 @@ defm FMLS     : SIMDThreeSameVectorFPTied<0, 1, 0b001, "fmls",
             TriOpFrag<(any_fma node:$MHS, (fneg node:$RHS), node:$LHS)> >;
 
 defm FMULX    : SIMDThreeSameVectorFP<0,0,0b011,"fmulx", int_aarch64_neon_fmulx>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FMUL     : SIMDThreeSameVectorFP<1,0,0b011,"fmul", any_fmul>;
+}
 defm FRECPS   : SIMDThreeSameVectorFP<0,0,0b111,"frecps", int_aarch64_neon_frecps>;
 defm FRSQRTS  : SIMDThreeSameVectorFP<0,1,0b111,"frsqrts", int_aarch64_neon_frsqrts>;
+let isCandidateForFPInstrumentation = 1 in {
 defm FSUB     : SIMDThreeSameVectorFP<0,1,0b010,"fsub", any_fsub>;
+}
 
 // MLA and MLS are generated in MachineCombine
 defm MLA      : SIMDThreeSameVectorBHSTied<0, 0b10010, "mla", null_frag>;

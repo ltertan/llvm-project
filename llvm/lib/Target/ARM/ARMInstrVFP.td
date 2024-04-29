@@ -400,14 +400,14 @@ def : VFP2MnemonicAlias<"fstmfdx", "fstmdbx">;
 // FP Binary Operations.
 //
 
-let TwoOperandAliasConstraint = "$Dn = $Dd" in
+let TwoOperandAliasConstraint = "$Dn = $Dd", isCandidateForFPInstrumentation = 1 in
 def VADDD  : ADbI<0b11100, 0b11, 0, 0,
                   (outs DPR:$Dd), (ins DPR:$Dn, DPR:$Dm),
                   IIC_fpALU64, "vadd", ".f64\t$Dd, $Dn, $Dm",
                   [(set DPR:$Dd, (fadd DPR:$Dn, (f64 DPR:$Dm)))]>,
              Sched<[WriteFPALU64]>;
 
-let TwoOperandAliasConstraint = "$Sn = $Sd" in
+let TwoOperandAliasConstraint = "$Sn = $Sd", isCandidateForFPInstrumentation = 1 in
 def VADDS  : ASbIn<0b11100, 0b11, 0, 0,
                    (outs SPR:$Sd), (ins SPR:$Sn, SPR:$Sm),
                    IIC_fpALU32, "vadd", ".f32\t$Sd, $Sn, $Sm",
@@ -425,14 +425,14 @@ def VADDH  : AHbI<0b11100, 0b11, 0, 0,
                   [(set (f16 HPR:$Sd), (fadd (f16 HPR:$Sn), (f16 HPR:$Sm)))]>,
              Sched<[WriteFPALU32]>;
 
-let TwoOperandAliasConstraint = "$Dn = $Dd" in
+let TwoOperandAliasConstraint = "$Dn = $Dd", isCandidateForFPInstrumentation = 1 in
 def VSUBD  : ADbI<0b11100, 0b11, 1, 0,
                   (outs DPR:$Dd), (ins DPR:$Dn, DPR:$Dm),
                   IIC_fpALU64, "vsub", ".f64\t$Dd, $Dn, $Dm",
                   [(set DPR:$Dd, (fsub DPR:$Dn, (f64 DPR:$Dm)))]>,
              Sched<[WriteFPALU64]>;
 
-let TwoOperandAliasConstraint = "$Sn = $Sd" in
+let TwoOperandAliasConstraint = "$Sn = $Sd", isCandidateForFPInstrumentation = 1 in
 def VSUBS  : ASbIn<0b11100, 0b11, 1, 0,
                    (outs SPR:$Sd), (ins SPR:$Sn, SPR:$Sm),
                    IIC_fpALU32, "vsub", ".f32\t$Sd, $Sn, $Sm",
@@ -450,14 +450,14 @@ def VSUBH  : AHbI<0b11100, 0b11, 1, 0,
                   [(set (f16 HPR:$Sd), (fsub (f16 HPR:$Sn), (f16 HPR:$Sm)))]>,
             Sched<[WriteFPALU32]>;
 
-let TwoOperandAliasConstraint = "$Dn = $Dd" in
+let TwoOperandAliasConstraint = "$Dn = $Dd", isCandidateForFPInstrumentation = 1 in
 def VDIVD  : ADbI<0b11101, 0b00, 0, 0,
                   (outs DPR:$Dd), (ins DPR:$Dn, DPR:$Dm),
                   IIC_fpDIV64, "vdiv", ".f64\t$Dd, $Dn, $Dm",
                   [(set DPR:$Dd, (fdiv DPR:$Dn, (f64 DPR:$Dm)))]>,
              Sched<[WriteFPDIV64]>;
 
-let TwoOperandAliasConstraint = "$Sn = $Sd" in
+let TwoOperandAliasConstraint = "$Sn = $Sd", isCandidateForFPInstrumentation = 1 in
 def VDIVS  : ASbI<0b11101, 0b00, 0, 0,
                   (outs SPR:$Sd), (ins SPR:$Sn, SPR:$Sm),
                   IIC_fpDIV32, "vdiv", ".f32\t$Sd, $Sn, $Sm",
@@ -471,14 +471,14 @@ def VDIVH  : AHbI<0b11101, 0b00, 0, 0,
                   [(set (f16 HPR:$Sd), (fdiv (f16 HPR:$Sn), (f16 HPR:$Sm)))]>,
              Sched<[WriteFPDIV32]>;
 
-let TwoOperandAliasConstraint = "$Dn = $Dd" in
+let TwoOperandAliasConstraint = "$Dn = $Dd", isCandidateForFPInstrumentation = 1 in
 def VMULD  : ADbI<0b11100, 0b10, 0, 0,
                   (outs DPR:$Dd), (ins DPR:$Dn, DPR:$Dm),
                   IIC_fpMUL64, "vmul", ".f64\t$Dd, $Dn, $Dm",
                   [(set DPR:$Dd, (fmul DPR:$Dn, (f64 DPR:$Dm)))]>,
              Sched<[WriteFPMUL64, ReadFPMUL, ReadFPMUL]>;
 
-let TwoOperandAliasConstraint = "$Sn = $Sd" in
+let TwoOperandAliasConstraint = "$Sn = $Sd", isCandidateForFPInstrumentation = 1 in
 def VMULS  : ASbIn<0b11100, 0b10, 0, 0,
                    (outs SPR:$Sd), (ins SPR:$Sn, SPR:$Sm),
                    IIC_fpMUL32, "vmul", ".f32\t$Sd, $Sn, $Sm",
@@ -584,7 +584,7 @@ def : Pat<(fmul (fneg SPR:$a), SPR:$b),
           (VNMULS SPR:$a, SPR:$b)>, Requires<[NoHonorSignDependentRounding]>;
 
 // These are encoded as unary instructions.
-let Defs = [FPSCR_NZCV] in {
+let Defs = [FPSCR_NZCV], isCandidateForFPInstrumentation = 1 in {
 def VCMPED : ADuI<0b11101, 0b11, 0b0100, 0b11, 0,
                   (outs), (ins DPR:$Dd, DPR:$Dm),
                   IIC_fpCMP64, "vcmpe", ".f64\t$Dd, $Dm", "",
@@ -647,7 +647,7 @@ def VABSH  : AHuI<0b11101, 0b11, 0b0000, 0b11, 0,
                    IIC_fpUNA16, "vabs", ".f16\t$Sd, $Sm",
                    [(set (f16 HPR:$Sd), (fabs (f16 HPR:$Sm)))]>;
 
-let Defs = [FPSCR_NZCV] in {
+let Defs = [FPSCR_NZCV], isCandidateForFPInstrumentation = 1 in {
 def VCMPEZD : ADuI<0b11101, 0b11, 0b0101, 0b11, 0,
                    (outs), (ins DPR:$Dd),
                    IIC_fpCMP64, "vcmpe", ".f64\t$Dd, #0", "",
@@ -714,6 +714,8 @@ def VCVTDS  : ASuI<0b11101, 0b11, 0b0111, 0b11, 0,
   bits<5> Dd;
   bits<5> Sm;
 
+  let isCandidateForFPInstrumentation = 1;
+
   // Encode instruction operands.
   let Inst{3-0}   = Sm{4-1};
   let Inst{5}     = Sm{0};
@@ -732,6 +734,8 @@ def VCVTSD  : VFPAI<(outs SPR:$Sd), (ins DPR:$Dm), VFPUnaryFrm,
   // Instruction operands.
   bits<5> Sd;
   bits<5> Dm;
+
+  let isCandidateForFPInstrumentation = 1;
 
   // Encode instruction operands.
   let Inst{3-0}   = Dm{3-0};
@@ -1455,6 +1459,7 @@ def VSITOD : AVConv1IDs_Encode<0b11101, 0b11, 0b1000, 0b1011,
                                []>,
              Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // s32
+  let isCandidateForFPInstrumentation = 1;
 }
 
 let Predicates=[HasVFP2, HasDPVFP] in {
@@ -1471,6 +1476,8 @@ def VSITOS : AVConv1InSs_Encode<0b11101, 0b11, 0b1000, 0b1010,
                                 []>,
              Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // s32
+
+  let isCandidateForFPInstrumentation = 1;
 
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
@@ -1501,6 +1508,7 @@ def VUITOD : AVConv1IDs_Encode<0b11101, 0b11, 0b1000, 0b1011,
                                []>,
              Sched<[WriteFPCVT]> {
   let Inst{7} = 0; // u32
+  let isCandidateForFPInstrumentation = 1;
 }
 
 let Predicates=[HasVFP2, HasDPVFP] in {
@@ -1517,6 +1525,8 @@ def VUITOS : AVConv1InSs_Encode<0b11101, 0b11, 0b1000, 0b1010,
                                 []>,
              Sched<[WriteFPCVT]> {
   let Inst{7} = 0; // u32
+
+  let isCandidateForFPInstrumentation = 1;
 
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
@@ -1609,6 +1619,7 @@ def VTOSIZD : AVConv1IsD_Encode<0b11101, 0b11, 0b1101, 0b1011,
                                 []>,
               Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // Z bit
+  let isCandidateForFPInstrumentation = 1;
 }
 
 let Predicates=[HasVFP2, HasDPVFP] in {
@@ -1629,6 +1640,8 @@ def VTOSIZS : AVConv1InsS_Encode<0b11101, 0b11, 0b1101, 0b1010,
                                  []>,
               Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // Z bit
+
+  let isCandidateForFPInstrumentation = 1;
 
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.
@@ -1667,6 +1680,7 @@ def VTOUIZD : AVConv1IsD_Encode<0b11101, 0b11, 0b1100, 0b1011,
                                []>,
               Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // Z bit
+  let isCandidateForFPInstrumentation = 1;
 }
 
 let Predicates=[HasVFP2, HasDPVFP] in {
@@ -1687,6 +1701,8 @@ def VTOUIZS : AVConv1InsS_Encode<0b11101, 0b11, 0b1100, 0b1010,
                                  []>,
               Sched<[WriteFPCVT]> {
   let Inst{7} = 1; // Z bit
+
+  let isCandidateForFPInstrumentation = 1;
 
   // Some single precision VFP instructions may be executed on both NEON and
   // VFP pipelines on A8.

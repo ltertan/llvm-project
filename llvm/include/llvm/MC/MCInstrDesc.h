@@ -187,6 +187,7 @@ enum Flag {
   Trap,
   VariadicOpsAreDefs,
   Authenticated,
+  IsCandidateForFPInstrumentation,
 };
 } // namespace MCID
 
@@ -413,6 +414,11 @@ public:
   /// Convergent instructions may not be made control-dependent on any
   /// additional values.
   bool isConvergent() const { return Flags & (1ULL << MCID::Convergent); }
+
+  /// Return true if this instruction needs instrumentation
+  bool isCandidateForFPInstrumentation() const {
+    return Flags & (1ULL << MCID::IsCandidateForFPInstrumentation);
+  }
 
   /// Return true if variadic operands of this instruction are definitions.
   bool variadicOpsAreDefs() const {

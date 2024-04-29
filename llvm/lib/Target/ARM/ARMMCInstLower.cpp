@@ -35,6 +35,10 @@
 
 using namespace llvm;
 
+extern cl::opt<std::string> EnableFPInstrumentation;
+extern cl::opt<unsigned> FPInstrumentationMask;
+extern cl::opt<bool> FPInstrumentationOpt;
+
 MCOperand ARMAsmPrinter::GetSymbolRef(const MachineOperand &MO,
                                       const MCSymbol *Symbol) {
   MCSymbolRefExpr::VariantKind SymbolVariant = MCSymbolRefExpr::VK_None;
@@ -242,4 +246,211 @@ void ARMAsmPrinter::LowerPATCHABLE_FUNCTION_EXIT(const MachineInstr &MI)
 void ARMAsmPrinter::LowerPATCHABLE_TAIL_CALL(const MachineInstr &MI)
 {
   EmitSled(MI, SledKind::TAIL_CALL);
+}
+
+void ARMAsmPrinter::SetupFPInstrumentationRegisterMap(MachineFunction &MF) {
+    /*
+     * Note, we have to backport the following change from LLVM10 to LLVM7 to
+     * perform the optimization using registers if possible.
+     *
+     *   [ARM] Preserve liveness in ARMConstantIslands.
+     *   https://reviews.llvm.org/D66319
+     *   commit: eaff844fe9584be189ce66214efdf8ce1eceeb5b
+     */
+    if (EnableFPInstrumentation.empty() ||
+        !FPInstrumentationOpt ||
+        !MF.getRegInfo().tracksLiveness()) return;
+
+    for (MachineBasicBlock &MBB : MF) {
+        LiveRegUnits LRU(*Subtarget->getRegisterInfo());
+
+        // Collect defs, uses and regmask clobbers within the basic block
+        std::for_each(MBB.rbegin(), MBB.rend(),
+                      [&LRU](MachineInstr &MI) { LRU.accumulate(MI); });
+
+        // Now, add the live outs to the set.
+        LRU.addLiveOuts(MBB);
+
+        // If the register is available in the MBB, but also not a live out of
+        // the block, then we know it's safe to use it without save/restore.
+        FPInstrumentationRegisterMap[&MBB] =
+        std::tuple<bool, bool, bool>(
+             LRU.available(ARM::R11), // callee-saved register
+             LRU.available(ARM::R12), // Intra-procedural-call scratch register
+             LRU.available(ARM::CPSR));
+    }
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_FUNCTION_ENTER(const MachineInstr &MI)
+{
+  if (!FPInstrumentationOpt) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::STMDB_UPD)
+         // Add predicate operands.
+        .addReg(ARM::SP)
+        .addReg(ARM::SP)
+        .addImm(ARMCC::AL)
+        .addReg(0)
+        .addReg(ARM::R12));
+  }
+
+  // #clear fpscr
+  // vmrs r12, fpscr
+  // bic r12, r12, #FPInstrumentationMask
+  // vmsr fpscr, r12
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::VMRS)
+      .addReg(ARM::R12)
+       // Add predicate operands.
+      .addImm(ARMCC::AL)
+      .addReg(0)
+      .addReg(ARM::FPSCR));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::BICri)
+      .addReg(ARM::R12)
+      .addReg(ARM::R12)
+      .addImm(FPInstrumentationMask)
+       // Add predicate operands.
+      .addImm(ARMCC::AL)
+      .addReg(0)
+       // 's' bit operand (always reg0 for this).
+      .addReg(0));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::VMSR)
+      .addReg(ARM::R12)
+       // Add predicate operands.
+      .addImm(ARMCC::AL)
+      .addReg(0)
+      .addReg(ARM::FPSCR));
+
+  if (!FPInstrumentationOpt) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::LDMIA_UPD)
+         // Add predicate operands.
+        .addReg(ARM::SP)
+        .addReg(ARM::SP)
+        .addImm(ARMCC::AL)
+        .addReg(0)
+        .addReg(ARM::R12));
+  }
+}
+
+void ARMAsmPrinter::LowerFP_INSTRUMENT_OP(const MachineInstr &MI)
+{
+  bool R11AvailableInBlock = false;
+  bool R12AvailableInBlock = false;
+  bool CPSRAvailableInBlock = false;
+
+  if (FPInstrumentationOpt) {
+    auto iter = FPInstrumentationRegisterMap.find(MI.getParent());
+    if (iter != FPInstrumentationRegisterMap.end()) {
+      std::tuple<bool, bool, bool> &AvailableR11R12CPSR = iter->second;
+      R11AvailableInBlock = std::get<0>(AvailableR11R12CPSR);
+      R12AvailableInBlock = std::get<1>(AvailableR11R12CPSR);
+      CPSRAvailableInBlock = std::get<2>(AvailableR11R12CPSR);
+    }
+  }
+
+  // save r12
+  if (!R12AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::STMDB_UPD)
+         // Add predicate operands.
+        .addReg(ARM::SP)
+        .addReg(ARM::SP)
+        .addImm(ARMCC::AL)
+        .addReg(0)
+        .addReg(ARM::R12));
+  }
+
+  // save CPSR
+  if (!CPSRAvailableInBlock) {
+    if (!R11AvailableInBlock) {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::MRS)
+          .addReg(ARM::R12)
+           // Add predicate operands.
+          .addImm(ARMCC::AL)
+          .addReg(0)
+          .addReg(ARM::CPSR));
+
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::STMDB_UPD)
+           // Add predicate operands.
+          .addReg(ARM::SP)
+          .addReg(ARM::SP)
+          .addImm(ARMCC::AL)
+          .addReg(0)
+          .addReg(ARM::R12));
+      } else {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::MRS)
+          .addReg(ARM::R11)
+           // Add predicate operands.
+          .addImm(ARMCC::AL)
+          .addReg(0)
+          .addReg(ARM::CPSR));
+    }
+  }
+
+  // #check
+  // vmrs r12, fpscr
+  // tst r12, #FPInstrumentationMask
+  // bne wr_fixed_addr
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::VMRS)
+      .addReg(ARM::R12)
+       // Add predicate operands.
+      .addImm(ARMCC::AL)
+      .addReg(0)
+      .addReg(ARM::FPSCR));
+
+  EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::TSTri)
+      .addReg(ARM::R12)
+      .addImm(FPInstrumentationMask)
+       // Add predicate operands.
+      .addImm(ARMCC::AL)
+      .addReg(0));
+
+  // Existing tests can pass with -mllvm --enable-fp-instrumentation=nop even
+  // when there is any floating point exception.
+  if (EnableFPInstrumentation == ".nop") {
+    emitNops(1);
+  } else {
+    MCSymbol *Label = OutContext.getOrCreateSymbol(EnableFPInstrumentation);
+    const MCExpr *SymbolExpr = MCSymbolRefExpr::create(Label, OutContext);
+    EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::Bcc)
+         .addExpr(SymbolExpr)
+         .addImm(ARMCC::NE));
+  }
+
+  // restore CPSR
+  if (!CPSRAvailableInBlock) {
+    if (!R11AvailableInBlock) {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::LDMIA_UPD)
+           // Add predicate operands.
+          .addReg(ARM::SP)
+          .addReg(ARM::SP)
+          .addImm(ARMCC::AL)
+          .addReg(0)
+          .addReg(ARM::R12));
+
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::MSR)
+          .addImm(8)
+          .addReg(ARM::R12)
+           // Add predicate operands.
+          .addImm(ARMCC::AL)
+          .addReg(0));
+    } else {
+      EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::MSR)
+          .addImm(8)
+          .addReg(ARM::R11)
+           // Add predicate operands.
+          .addImm(ARMCC::AL)
+          .addReg(0));
+    }
+  }
+
+  // restore r12
+  if (!R12AvailableInBlock) {
+    EmitToStreamer(*OutStreamer, MCInstBuilder(ARM::LDMIA_UPD)
+         // Add predicate operands.
+        .addReg(ARM::SP)
+        .addReg(ARM::SP)
+        .addImm(ARMCC::AL)
+        .addReg(0)
+        .addReg(ARM::R12));
+  }
 }

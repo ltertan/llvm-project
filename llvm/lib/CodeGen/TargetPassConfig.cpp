@@ -1220,6 +1220,8 @@ void TargetPassConfig::addMachinePasses() {
   addPass(&XRayInstrumentationID);
   addPass(&PatchableFunctionID);
 
+  addPass(&FPInstrumentationID);
+
   addPreEmitPass();
 
   if (TM->Options.EnableIPRA)

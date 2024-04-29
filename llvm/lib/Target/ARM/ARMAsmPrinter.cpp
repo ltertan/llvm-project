@@ -116,6 +116,7 @@ bool ARMAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
   Subtarget = &MF.getSubtarget<ARMSubtarget>();
 
   SetupMachineFunction(MF);
+  SetupFPInstrumentationRegisterMap(MF);
   const Function &F = MF.getFunction();
   const TargetMachine& TM = MF.getTarget();
 
@@ -2280,6 +2281,12 @@ void ARMAsmPrinter::emitInstruction(const MachineInstr *MI) {
     return;
   case ARM::PATCHABLE_TAIL_CALL:
     LowerPATCHABLE_TAIL_CALL(*MI);
+    return;
+  case ARM::FP_INSTRUMENT_OP:
+    LowerFP_INSTRUMENT_OP(*MI);
+    return;
+  case ARM::FP_INSTRUMENT_FUNCTION_ENTER:
+    LowerFP_INSTRUMENT_FUNCTION_ENTER(*MI);
     return;
   case ARM::SpeculationBarrierISBDSBEndBB: {
     // Print DSB SYS + ISB

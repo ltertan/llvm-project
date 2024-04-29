@@ -375,6 +375,9 @@ namespace llvm {
   /// This pass implements the "patchable-function" attribute.
   extern char &PatchableFunctionID;
 
+  /// This pass inserts instrumentation for catching floating pointing exception
+  extern char &FPInstrumentationID;
+
   /// createStackProtectorPass - This pass adds stack protectors to functions.
   ///
   FunctionPass *createStackProtectorPass();

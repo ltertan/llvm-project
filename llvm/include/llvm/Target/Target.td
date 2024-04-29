@@ -561,6 +561,8 @@ class Instruction : InstructionEncoding {
   bit mayLoad      = ?;         // Is it possible for this inst to read memory?
   bit mayStore     = ?;         // Is it possible for this inst to write memory?
   bit mayRaiseFPException = false; // Can this raise a floating-point exception?
+  bit isCandidateForFPInstrumentation = 0; // Is this a candidate
+                                           // for FP instrumentation?
   bit isConvertibleToThreeAddress = false;  // Can this 2-addr instruction promote?
   bit isCommutable = false;     // Is this 3 operand instruction commutable?
   bit isTerminator = false;     // Is this part of the terminator for a basic block?
@@ -1325,6 +1327,24 @@ def FAULTING_OP : StandardPseudoInstruction {
   let mayStore = true;
   let isTerminator = true;
   let isBranch = true;
+}
+def FP_INSTRUMENT_FUNCTION_ENTER: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins);
+  let AsmString = "# FP Function Enter.";
+  let usesCustomInserter = 1;
+  let mayLoad = 1;
+  let mayStore = 1;
+  let hasSideEffects = 1;
+}
+def FP_INSTRUMENT_OP: StandardPseudoInstruction {
+  let OutOperandList = (outs);
+  let InOperandList = (ins);
+  let AsmString = "# FP Exception Catching Op.";
+  let usesCustomInserter = 1;
+  let mayLoad = 1;
+  let mayStore = 1;
+  let hasSideEffects = 1;
 }
 def PATCHABLE_OP : StandardPseudoInstruction {
   let OutOperandList = (outs);

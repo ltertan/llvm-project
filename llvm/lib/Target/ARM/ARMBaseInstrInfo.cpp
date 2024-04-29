@@ -1,4 +1,4 @@
-//===-- ARMBaseInstrInfo.cpp - ARM Instruction Information ----------------===//
+// //===-- ARMBaseInstrInfo.cpp - ARM Instruction Information ----------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -790,6 +790,30 @@ unsigned ARMBaseInstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
     // contrast to AArch64 instructions which have a default size of 4 bytes for
     // example.
     return MCID.getSize();
+
+  // ARMConstantIslands pass needs to know the size of every instruction,
+  // and is performed before lowering FP_INSTRUMENT_FUNCTION_ENTER and
+  // FP_INSTRUMENT_OP, so we have to tell the size of these pseudos.
+  //
+  // However, with --fp-instrumentation-opt=true, the number of
+  // instructions they are lowered to is not fixed.
+  // ARM::FP_INSTRUMENT_FUNCTION_ENTER is lowered to at most 5 instructions,
+  // while 9 instructions at most for ARM::FP_INSTRUMENT_OP.
+  //
+  // Fortunately, for the moment, only ARMConstantIslands pass needs to know
+  // their size, and it's ok to be conservative by setting the size to the
+  // maximum. Therefore, a fixed size is given for each of them.
+  //
+  // If a pass needs to know the exact size, we will not be able to use
+  // --fp-instrumentation-opt=true.
+  //
+  // Because ARMConstantIslands pass is specific to ARM32, we don't need to
+  // tell their size for ARM64.
+  case ARM::FP_INSTRUMENT_FUNCTION_ENTER:
+    return 20;
+  case ARM::FP_INSTRUMENT_OP:
+    return 36;
+
   case TargetOpcode::BUNDLE:
     return getInstBundleLength(MI);
   case ARM::CONSTPOOL_ENTRY:

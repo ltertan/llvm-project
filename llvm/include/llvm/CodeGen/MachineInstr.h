@@ -1143,6 +1143,20 @@ public:
            !getFlag(MachineInstr::MIFlag::NoFPExcept);
   }
 
+  /// Retrun true if this instruction is a candidate for fp instrumentation
+  /// The instrumentation is only performed for a floating point instruction
+  /// which may cause an exception. We perform the instrumentation mainly for
+  /// ARM. Here we don't reuse MCID::MayRaiseFPException because of three
+  /// reasons.
+  ///   1. This property has not been introduced for ARM.
+  ///   2. It may affect some code generation phases (e.g. MachinePipeliner)
+  ///      if this property is attached to fp instructions.
+  ///   3. We want to implement the instrumentation without affecting original
+  ///      code generation.
+  bool isCandidateForFPInstrumentation() const {
+    return hasProperty(MCID::IsCandidateForFPInstrumentation);
+  }
+
   //===--------------------------------------------------------------------===//
   // Flags that indicate whether an instruction can be modified by a method.
   //===--------------------------------------------------------------------===//
