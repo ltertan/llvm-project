@@ -307,6 +307,12 @@ void aarch64::getAArch64TargetFeatures(const Driver &D,
     Features.push_back("-crypto");
     Features.push_back("-neon");
   }
+  if (Args.getLastArg(options::OPT_mno_va_float)) {
+    Features.push_back("+no-va-float");
+  }
+  if (Args.getLastArg(options::OPT_mva_float)) {
+    Features.push_back("-no-va-float");
+  }
 
   if (Arg *A = Args.getLastArg(options::OPT_mtp_mode_EQ)) {
     StringRef Mtp = A->getValue();

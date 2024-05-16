@@ -123,6 +123,7 @@ protected:
   BitVector CustomCallSavedXRegs;
 
   bool IsLittle;
+  bool HasNoVaFloat = false;
 
   bool StreamingSVEMode;
   bool StreamingCompatibleSVEMode;
@@ -265,6 +266,8 @@ public:
   }
 
   unsigned getMaximumJumpTableSize() const { return MaxJumpTableSize; }
+
+  bool hasNoVaFloat() const { return HasNoVaFloat; }
 
   /// CPU has TBI (top byte of addresses is ignored during HW address
   /// translation) and OS enables it.

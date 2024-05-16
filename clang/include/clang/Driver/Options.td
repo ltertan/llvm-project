@@ -3940,6 +3940,10 @@ def mharden_sls_EQ : Joined<["-"], "mharden-sls=">, Group<m_Group>,
            " only). <arg> must be: all, none, retbr(ARM/AArch64),"
            " blr(ARM/AArch64), comdat(ARM/AArch64), nocomdat(ARM/AArch64),"
            " return(X86), indirect-jmp(X86)">;
+def mno_va_float : Flag<["-"], "mno-va-float">, Group<m_aarch64_Features_Group>,
+  HelpText<"do not generate FP save code in variadic functions">;
+def mva_float : Flag<["-"], "mva-float">, Group<m_aarch64_Features_Group>,
+  HelpText<"generate FP save code in variadic functions (default)">;
 
 def msimd128 : Flag<["-"], "msimd128">, Group<m_wasm_Features_Group>;
 def mno_simd128 : Flag<["-"], "mno-simd128">, Group<m_wasm_Features_Group>;

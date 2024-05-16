@@ -28,6 +28,9 @@ include "llvm/Target/Target.td"
 def FeatureFPARMv8 : SubtargetFeature<"fp-armv8", "HasFPARMv8", "true",
                                        "Enable ARMv8 FP (FEAT_FP)">;
 
+def FeatureNoVaFloat : SubtargetFeature<"no-va-float", "HasNoVaFloat", "true",
+                                       "Do not generate FP save code in variadic functions">;
+
 def FeatureNEON : SubtargetFeature<"neon", "HasNEON", "true",
   "Enable Advanced SIMD instructions (FEAT_AdvSIMD)", [FeatureFPARMv8]>;
 
